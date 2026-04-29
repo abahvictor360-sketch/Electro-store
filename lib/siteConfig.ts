@@ -88,8 +88,12 @@ export const defaultConfig: SiteConfigData = {
 };
 
 export async function getSiteConfig(): Promise<SiteConfigData> {
-  const { prisma } = await import("@/lib/prisma");
-  const row = await prisma.siteConfig.findUnique({ where: { id: "site" } });
-  if (!row) return defaultConfig;
-  return { ...defaultConfig, ...(row.data as Partial<SiteConfigData>) };
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const row = await prisma.siteConfig.findUnique({ where: { id: "site" } });
+    if (!row) return defaultConfig;
+    return { ...defaultConfig, ...(row.data as Partial<SiteConfigData>) };
+  } catch {
+    return defaultConfig;
+  }
 }

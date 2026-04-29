@@ -6,11 +6,19 @@ import ProductCard from "@/components/ProductCard";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [config, newProducts, saleProducts] = await Promise.all([
-    getSiteConfig(),
-    prisma.product.findMany({ take: 8, orderBy: { createdAt: "desc" } }),
-    prisma.product.findMany({ take: 4, where: { salePrice: { not: null } }, orderBy: { createdAt: "desc" } }),
-  ]);
+  const config = await getSiteConfig();
+
+  let newProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
+  let saleProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
+
+  try {
+    [newProducts, saleProducts] = await Promise.all([
+      prisma.product.findMany({ take: 8, orderBy: { createdAt: "desc" } }),
+      prisma.product.findMany({ take: 4, where: { salePrice: { not: null } }, orderBy: { createdAt: "desc" } }),
+    ]);
+  } catch {
+    // DB unavailable at build time — render empty state
+  }
 
   const { hero, homepage } = config;
 
