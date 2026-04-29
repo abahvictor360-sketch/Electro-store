@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import Image from "next/image";
 import DeleteProductButton from "@/components/DeleteProductButton";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export default async function AdminProductsPage() {
                       <div className="border rounded d-flex align-items-center justify-content-center"
                         style={{ width: 40, height: 40, background: "#f8f9fa", flexShrink: 0 }}>
                         {p.images[0] ? (
-                          <img src={p.images[0]} alt="" style={{ maxWidth: 36, maxHeight: 36, objectFit: "contain" }} />
+                          <Image src={p.images[0]} alt="" width={36} height={36} style={{ objectFit: "contain" }} />
                         ) : (
                           <i className="fas fa-image text-muted" />
                         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import type { Product } from "@prisma/client";
@@ -17,7 +18,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <div className="product-card">
-      <div className="product-img">
+      <div className="product-img" style={{ position: "relative" }}>
         {savings > 0 && <span className="badge-sale">-{savings}%</span>}
         {/* Wishlist heart */}
         <button
@@ -50,7 +51,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </button>
 
         {product.images[0] ? (
-          <img src={product.images[0]} alt={product.name} />
+          <Image src={product.images[0]} alt={product.name} fill style={{ objectFit: "contain" }} />
         ) : (
           <i className="fas fa-image fa-3x text-secondary" />
         )}

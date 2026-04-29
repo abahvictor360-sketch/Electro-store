@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import type { Product } from "@prisma/client";
@@ -48,14 +49,15 @@ export default function ProductDetail({ product, related }: Props) {
           {/* Images */}
           <div className="col-md-5">
             <div
-              className="border rounded d-flex align-items-center justify-content-center mb-3"
+              className="border rounded d-flex align-items-center justify-content-center mb-3 position-relative"
               style={{ height: 380, background: "#f8f9fa" }}
             >
               {product.images[activeImg] ? (
-                <img
+                <Image
                   src={product.images[activeImg]}
                   alt={product.name}
-                  style={{ maxHeight: 360, maxWidth: "100%", objectFit: "contain" }}
+                  fill
+                  style={{ objectFit: "contain", padding: "10px" }}
                 />
               ) : (
                 <i className="fas fa-image fa-5x text-secondary" />
@@ -67,10 +69,10 @@ export default function ProductDetail({ product, related }: Props) {
                   <button
                     key={i}
                     onClick={() => setActiveImg(i)}
-                    className={`btn p-1 border ${activeImg === i ? "border-danger" : ""}`}
+                    className={`btn p-1 border position-relative ${activeImg === i ? "border-danger" : ""}`}
                     style={{ width: 70, height: 70 }}
                   >
-                    <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <Image src={img} alt="" fill style={{ objectFit: "contain" }} />
                   </button>
                 ))}
               </div>
