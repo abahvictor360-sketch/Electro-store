@@ -3,6 +3,7 @@
 import { useWishlist } from "@/store/wishlist";
 import { useCart } from "@/store/cart";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function WishlistPage() {
   const { items, removeItem } = useWishlist();
@@ -48,9 +49,11 @@ export default function WishlistPage() {
                     </span>
                   )}
                   {item.image ? (
-                    <img
+                    <Image
                       src={item.image}
                       alt={item.name}
+                      width={180}
+                      height={180}
                       style={{ maxHeight: 180, maxWidth: "100%", objectFit: "contain" }}
                     />
                   ) : (

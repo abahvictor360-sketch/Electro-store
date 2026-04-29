@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,7 @@ export default async function OrderDetailPage({ params, searchParams }: {
                   <div className="border rounded d-flex align-items-center justify-content-center"
                     style={{ width: 60, height: 60, background: "#f8f9fa", flexShrink: 0 }}>
                     {item.product.images[0] ? (
-                      <img src={item.product.images[0]} alt={item.product.name} style={{ maxWidth: 50, maxHeight: 50, objectFit: "contain" }} />
+                      <Image src={item.product.images[0]} alt={item.product.name} width={50} height={50} style={{ objectFit: "contain" }} />
                     ) : (
                       <i className="fas fa-image text-muted" />
                     )}

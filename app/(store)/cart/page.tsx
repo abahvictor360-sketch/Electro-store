@@ -45,7 +45,7 @@ export default function CartPage() {
                             style={{ width: 60, height: 60, background: "#f8f9fa", flexShrink: 0 }}
                           >
                             {item.image ? (
-                              <img src={item.image} alt={item.name} style={{ maxWidth: 50, maxHeight: 50, objectFit: "contain" }} />
+                              <Image src={item.image} alt={item.name} width={50} height={50} style={{ objectFit: "contain" }} />
                             ) : (
                               <i className="fas fa-image text-muted" />
                             )}
