@@ -29,7 +29,7 @@ declare global {
 
 export default function HomeSlider({ products, navId }: Props) {
   const addToCart = useCart((s) => s.addItem);
-  const toggleWishlist = useWishlist((s) => s.toggleItem);
+  const toggleWishlist = useWishlist((s) => s.toggle);
   const wishlistItems = useWishlist((s) => s.items);
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export default function HomeSlider({ products, navId }: Props) {
               <div className="product-btns">
                 <button
                   className="add-to-wishlist"
-                  onClick={() => toggleWishlist({ id: p.id, name: p.name, slug: p.slug, price: p.salePrice ?? p.price, image: img })}
+                  onClick={() => toggleWishlist({ id: p.id, name: p.name, slug: p.slug, price: p.salePrice ?? p.price, salePrice: p.salePrice, image: img })}
                 >
                   <i className={inWishlist ? "fa fa-heart" : "fa fa-heart-o"} />
                   <span className="tooltipp">{inWishlist ? "remove from wishlist" : "add to wishlist"}</span>

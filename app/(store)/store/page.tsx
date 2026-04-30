@@ -7,12 +7,11 @@ import { Suspense } from "react";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  searchParams: Promise<{ q?: string; category?: string; min?: string; max?: string; brand?: string; sale?: string }>;
+  searchParams: { q?: string; category?: string; min?: string; max?: string; brand?: string; sale?: string };
 }
 
 export default async function StorePage({ searchParams }: Props) {
-  const params = await searchParams;
-  const { q, category, min, max, brand, sale } = params;
+  const { q, category, min, max, brand, sale } = searchParams;
 
   let products: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
   let categories: { category: string }[] = [];
