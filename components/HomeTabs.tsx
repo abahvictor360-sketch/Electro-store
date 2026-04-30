@@ -63,14 +63,14 @@ export default function HomeTabs({ products, title, categories }: Props) {
         </div>
       </div>
 
-      <div className="row">
-        {visible.length === 0 ? (
-          <div className="col-md-12 text-center" style={{ padding: "40px 0", color: "#999" }}>
-            <p>No products in this category yet.</p>
-            <Link href="/store" className="primary-btn">Browse All Products</Link>
-          </div>
-        ) : (
-          visible.map((p) => {
+      {visible.length === 0 ? (
+        <div className="text-center" style={{ padding: "40px 0", color: "#999" }}>
+          <p>No products in this category yet.</p>
+          <Link href="/store" className="primary-btn">Browse All Products</Link>
+        </div>
+      ) : (
+        <div className="products-grid">
+          {visible.map((p) => {
             const img = p.images?.[0] || "/img/product01.png";
             const price = p.salePrice ?? p.price;
             const discount = p.salePrice
@@ -82,7 +82,7 @@ export default function HomeTabs({ products, title, categories }: Props) {
             const inWishlist = has(p.id);
 
             return (
-              <div key={p.id} className="col-md-3 col-sm-6 col-xs-6">
+              <div key={p.id}>
                 <div className="product">
                   <div className="product-img">
                     <Link href={`/product/${p.slug}`}>
@@ -173,9 +173,9 @@ export default function HomeTabs({ products, title, categories }: Props) {
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </>
   );
 }

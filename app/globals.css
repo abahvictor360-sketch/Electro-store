@@ -373,11 +373,45 @@ select.admin-input { appearance: none; background-image: url("data:image/svg+xml
 .user-dash-sidebar .nav-item button:hover { background: #fafafa; color: #d10024; }
 .user-dash-sidebar .nav-item a.active { color: #d10024; border-left-color: #d10024; background: #fff5f6; font-weight: 600; }
 
-/* ── PRODUCT CARD GRID FIX ──────────────────────── */
-.products-grid-row { display: flex; flex-wrap: wrap; margin: 0 -12px; }
-.products-grid-row .product-col { padding: 0 12px; width: 25%; box-sizing: border-box; }
-@media (max-width: 992px) { .products-grid-row .product-col { width: 50%; } }
-@media (max-width: 576px) { .products-grid-row .product-col { width: 50%; } }
+/* ── PRODUCT CARD GRIDS ─────────────────────────── */
+/* 4-column grid — homepage New Products / Top Selling */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+/* 3-column grid — store page */
+.products-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+/* Equal-height cards inside CSS grids */
+.products-grid .product,
+.products-grid-3 .product {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.products-grid .product .product-body,
+.products-grid-3 .product .product-body {
+  flex: 1;
+}
+/* Responsive */
+@media (max-width: 991px) {
+  .products-grid   { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .products-grid-3 { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+}
+@media (max-width: 480px) {
+  .products-grid   { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .products-grid-3 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+/* Section-title: ensure float nav is properly contained */
+.section-title::after {
+  content: "";
+  display: table;
+  clear: both;
+}
 
 /* ── MISC ───────────────────────────────────────── */
 .text-primary-brand { color: #d10024 !important; }

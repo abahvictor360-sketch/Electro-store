@@ -111,11 +111,9 @@ export default async function StorePage({ searchParams }: Props) {
                   <Link href="/store" className="primary-btn">View All Products</Link>
                 </div>
               ) : (
-                <div className="row">
+                <div className="products-grid-3">
                   {products.map((p) => (
-                    <div key={p.id} className="col-md-4 col-xs-6">
-                      <ProductCard product={p} />
-                    </div>
+                    <ProductCard key={p.id} product={p} />
                   ))}
                 </div>
               )}
