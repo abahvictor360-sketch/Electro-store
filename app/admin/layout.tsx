@@ -224,6 +224,43 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         #admin-root .empty-state i { font-size: 2.6rem; margin-bottom: 14px; display: block; }
         #admin-root .empty-state p { font-size: 0.9rem; color: #aaa; }
         #admin-root .text-red { color: #d10024 !important; }
+
+        /* ── BOOTSTRAP 5 GRID (scoped, no CDN dependency) ── */
+        #admin-root .row { display: flex; flex-wrap: wrap; margin-right: -12px; margin-left: -12px; }
+        #admin-root .row > * { box-sizing: border-box; flex-shrink: 0; width: 100%; padding-right: 12px; padding-left: 12px; }
+        #admin-root .g-3 { --gap: 16px; gap: var(--gap); margin: 0; }
+        #admin-root .g-3 > * { padding: 0; width: auto; }
+        #admin-root .g-4 { --gap: 20px; gap: var(--gap); margin: 0; }
+        #admin-root .g-4 > * { padding: 0; width: auto; }
+        #admin-root .col-12  { flex: 0 0 100%;     max-width: 100%; }
+        #admin-root .col-6   { flex: 0 0 50%;      max-width: 50%; }
+        #admin-root .col-md-6  { flex: 0 0 50%;    max-width: 50%; }
+        #admin-root .col-md-4  { flex: 0 0 33.333%; max-width: 33.333%; }
+        #admin-root .col-md-8  { flex: 0 0 66.666%; max-width: 66.666%; }
+        #admin-root .col-md-12 { flex: 0 0 100%;   max-width: 100%; }
+        @media (min-width: 992px) {
+          #admin-root .col-lg-4  { flex: 0 0 33.333%; max-width: 33.333%; }
+          #admin-root .col-lg-8  { flex: 0 0 66.666%; max-width: 66.666%; }
+        }
+        @media (min-width: 576px) {
+          #admin-root .col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+        }
+        @media (min-width: 1200px) {
+          #admin-root .col-xl-3  { flex: 0 0 25%;      max-width: 25%; }
+          #admin-root .col-xl-4  { flex: 0 0 33.333%;  max-width: 33.333%; }
+        }
+        #admin-root .mt-4 { margin-top: 24px !important; }
+        #admin-root .mb-4 { margin-bottom: 24px !important; }
+        #admin-root .mb-3 { margin-bottom: 16px !important; }
+        #admin-root .me-2 { margin-right: 8px !important; }
+        #admin-root .d-flex { display: flex !important; }
+        #admin-root .align-items-center { align-items: center !important; }
+        #admin-root .justify-content-between { justify-content: space-between !important; }
+        #admin-root .flex-wrap { flex-wrap: wrap !important; }
+        #admin-root .gap-2 { gap: 8px !important; }
+        #admin-root .gap-3 { gap: 12px !important; }
+        #admin-root .w-100 { width: 100% !important; }
+        #admin-root .text-center { text-align: center !important; }
       `}</style>
 
       {/* ── Shell ──────────────────────────────────────────────────────── */}
