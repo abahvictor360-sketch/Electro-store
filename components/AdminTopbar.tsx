@@ -6,21 +6,18 @@ import { signOut } from "next-auth/react";
 import { useState } from "react";
 
 const pageTitles: Record<string, string> = {
-  "/admin":             "Dashboard",
-  "/admin/products":    "Products",
-  "/admin/orders":      "Orders",
-  "/admin/customers":   "Customers",
-  "/admin/content":     "Site Content",
+  "/admin":            "Dashboard",
+  "/admin/products":   "Products",
+  "/admin/orders":     "Orders",
+  "/admin/customers":  "Customers",
+  "/admin/content":    "Site Content",
 };
 
-interface Props {
-  userName: string;
-  userInitial: string;
-}
+interface Props { userName: string; userInitial: string; }
 
 export default function AdminTopbar({ userName, userInitial }: Props) {
   const pathname = usePathname();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const title =
     Object.entries(pageTitles)
@@ -28,66 +25,40 @@ export default function AdminTopbar({ userName, userInitial }: Props) {
       .find(([path]) => pathname.startsWith(path))?.[1] ?? "Admin";
 
   return (
-    <header className="admin-topbar">
-      <h1 className="admin-page-title">{title}</h1>
+    <header className="a-topbar">
+      <h1 className="a-topbar-title">{title}</h1>
 
-      <div className="admin-topbar-actions">
-        {/* Quick links */}
-        <Link
-          href="/admin/products/new"
-          className="btn-admin-primary"
-          style={{ padding: "7px 14px", fontSize: "0.8rem" }}
-        >
+      <div className="a-topbar-right">
+        <Link href="/admin/products/new" className="btn-ap" style={{ padding: "7px 14px", fontSize: "0.78rem" }}>
           <i className="fas fa-plus" /> Add Product
         </Link>
 
-        {/* Notification bell */}
-        <Link href="/admin/orders" style={{ color: "#888", position: "relative", textDecoration: "none" }}>
-          <i className="fas fa-bell" style={{ fontSize: 18 }} />
+        <Link href="/admin/orders" style={{ color: "#888", textDecoration: "none" }} title="Orders">
+          <i className="fas fa-bell" style={{ fontSize: 17 }} />
         </Link>
 
-        {/* View store */}
         <Link href="/" style={{ color: "#888", textDecoration: "none" }} target="_blank" title="View Store">
-          <i className="fas fa-external-link-alt" style={{ fontSize: 16 }} />
+          <i className="fas fa-external-link-alt" style={{ fontSize: 15 }} />
         </Link>
 
-        {/* Avatar dropdown */}
+        {/* Avatar + dropdown */}
         <div style={{ position: "relative" }}>
-          <button
-            className="admin-avatar"
-            onClick={() => setDropdownOpen((o) => !o)}
-            title={userName}
-          >
+          <button className="a-avatar" onClick={() => setOpen((o) => !o)} title={userName}>
             {userInitial}
           </button>
 
-          {dropdownOpen && (
+          {open && (
             <>
-              {/* Backdrop */}
-              <div
-                style={{ position: "fixed", inset: 0, zIndex: 998 }}
-                onClick={() => setDropdownOpen(false)}
-              />
-              <div style={{
-                position: "absolute", right: 0, top: "calc(100% + 8px)",
-                background: "#fff", borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
-                border: "1px solid #eee", width: 200, zIndex: 999, overflow: "hidden",
-              }}>
-                <div style={{ padding: "14px 16px", borderBottom: "1px solid #f0f2f7" }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: "0.875rem", color: "#1e2030" }}>{userName}</p>
-                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#888" }}>Administrator</p>
+              <div style={{ position: "fixed", inset: 0, zIndex: 998 }} onClick={() => setOpen(false)} />
+              <div className="a-dropdown">
+                <div style={{ padding: "12px 15px", borderBottom: "1px solid #f0f2f7" }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: "0.855rem", color: "#1e2030" }}>{userName}</p>
+                  <p style={{ margin: 0, fontSize: "0.72rem", color: "#888" }}>Administrator</p>
                 </div>
-                <Link
-                  href="/"
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", color: "#555", textDecoration: "none", fontSize: "0.875rem" }}
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  <i className="fas fa-store" style={{ width: 16 }} /> View Store
+                <Link href="/" onClick={() => setOpen(false)}>
+                  <i className="fas fa-store" style={{ width: 16, color: "#888" }} /> View Store
                 </Link>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", color: "#d10024", background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontSize: "0.875rem" }}
-                >
+                <button onClick={() => signOut({ callbackUrl: "/" })}>
                   <i className="fas fa-sign-out-alt" style={{ width: 16 }} /> Logout
                 </button>
               </div>
