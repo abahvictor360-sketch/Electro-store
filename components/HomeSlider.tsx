@@ -20,45 +20,55 @@ interface Props {
   navId: string;
 }
 
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    jQuery: any;
-  }
-}
-
 export default function HomeSlider({ products, navId }: Props) {
   const addToCart = useCart((s) => s.addItem);
-  const toggleWishlist = useWishlist((s) => s.toggle);
-  const wishlistItems = useWishlist((s) => s.items);
+  const toggle = useWishlist((s) => s.toggle);
+  const has = useWishlist((s) => s.has);
 
+  // Wait for jQuery + Slick to load, then initialize the slider.
+  // Runs on every mount (handles both initial load and client-side navigation).
   useEffect(() => {
-    const $ = window.jQuery;
-    if (!$) return;
+    let attempts = 0;
 
-    const selector = `.products-slick[data-nav="#${navId}"]`;
-    const $slick = $(selector);
-    if ($slick.length && !$slick.hasClass("slick-initialized")) {
-      $slick.slick({
+    function tryInit() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const $ = (window as any).jQuery;
+      if (!$ || !$.fn?.slick) {
+        // Slick not loaded yet — retry up to 50 times (5 seconds total)
+        if (attempts++ < 50) setTimeout(tryInit, 100);
+        return;
+      }
+
+      const $el = $(`.products-slick[data-nav="#${navId}"]`);
+      if (!$el.length || $el.hasClass("slick-initialized")) return;
+
+      $el.slick({
         slidesToShow: 4,
         slidesToScroll: 1,
-        appendDots: `#${navId}`,
-        dots: true,
+        autoplay: true,
+        infinite: true,
+        speed: 300,
+        dots: false,
+        arrows: true,
+        appendArrows: `#${navId}`,
         responsive: [
-          { breakpoint: 991, settings: { slidesToShow: 3 } },
-          { breakpoint: 767, settings: { slidesToShow: 2 } },
-          { breakpoint: 480, settings: { slidesToShow: 1 } },
+          { breakpoint: 991, settings: { slidesToShow: 2, slidesToScroll: 1 } },
+          { breakpoint: 480, settings: { slidesToShow: 1, slidesToScroll: 1 } },
         ],
       });
     }
+
+    tryInit();
   }, [navId]);
 
   return (
     <div className="products-slick" data-nav={`#${navId}`}>
       {products.map((p) => {
         const img = p.images?.[0] || "/img/product01.png";
-        const inWishlist = wishlistItems.some((w) => w.id === p.id);
-        const discount = p.salePrice ? Math.round(((p.price - p.salePrice) / p.price) * 100) : null;
+        const inWishlist = has(p.id);
+        const discount = p.salePrice
+          ? Math.round(((p.price - p.salePrice) / p.price) * 100)
+          : null;
 
         return (
           <div key={p.id} className="product">
@@ -66,9 +76,9 @@ export default function HomeSlider({ products, navId }: Props) {
               <Link href={`/product/${p.slug}`}>
                 <img src={img} alt={p.name} />
               </Link>
-              {(discount || p.salePrice === null) && (
+              {discount && (
                 <div className="product-label">
-                  {discount && <span className="sale">-{discount}%</span>}
+                  <span className="sale">-{discount}%</span>
                 </div>
               )}
             </div>
@@ -93,10 +103,25 @@ export default function HomeSlider({ products, navId }: Props) {
               <div className="product-btns">
                 <button
                   className="add-to-wishlist"
-                  onClick={() => toggleWishlist({ id: p.id, name: p.name, slug: p.slug, price: p.salePrice ?? p.price, salePrice: p.salePrice, image: img })}
+                  onClick={() =>
+                    toggle({
+                      id: p.id,
+                      name: p.name,
+                      slug: p.slug,
+                      price: p.price,
+                      salePrice: p.salePrice,
+                      image: img,
+                    })
+                  }
                 >
                   <i className={inWishlist ? "fa fa-heart" : "fa fa-heart-o"} />
-                  <span className="tooltipp">{inWishlist ? "remove from wishlist" : "add to wishlist"}</span>
+                  <span className="tooltipp">
+                    {inWishlist ? "remove from wishlist" : "add to wishlist"}
+                  </span>
+                </button>
+                <button className="add-to-compare">
+                  <i className="fa fa-exchange" />
+                  <span className="tooltipp">add to compare</span>
                 </button>
                 <button className="quick-view">
                   <i className="fa fa-eye" />
@@ -107,7 +132,15 @@ export default function HomeSlider({ products, navId }: Props) {
             <div className="add-to-cart">
               <button
                 className="add-to-cart-btn"
-                onClick={() => addToCart({ id: p.id, name: p.name, slug: p.slug, price: p.salePrice ?? p.price, image: img })}
+                onClick={() =>
+                  addToCart({
+                    id: p.id,
+                    name: p.name,
+                    slug: p.slug,
+                    price: p.salePrice ?? p.price,
+                    image: img,
+                  })
+                }
               >
                 <i className="fa fa-shopping-cart" /> add to cart
               </button>
