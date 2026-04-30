@@ -4,48 +4,85 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const [totalOrders, revenue, customers, products, lowStock, recentOrders] = await Promise.all([
-    prisma.order.count(),
-    prisma.order.aggregate({ _sum: { total: true }, where: { status: { not: "CANCELLED" } } }),
-    prisma.user.count({ where: { role: "CUSTOMER" } }),
-    prisma.product.count(),
-    prisma.product.findMany({ where: { stock: { lte: 5 } }, take: 5 }),
-    prisma.order.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: { user: { select: { name: true, email: true } }, items: true },
-    }),
-  ]);
+  const [totalOrders, revenue, customers, productCount, pendingOrders, lowStock, recentOrders, topProducts] =
+    await Promise.all([
+      prisma.order.count(),
+      prisma.order.aggregate({ _sum: { total: true }, where: { status: { not: "CANCELLED" } } }),
+      prisma.user.count({ where: { role: "CUSTOMER" } }),
+      prisma.product.count(),
+      prisma.order.count({ where: { status: "PENDING" } }),
+      prisma.product.findMany({ where: { stock: { lte: 5 } }, take: 5, orderBy: { stock: "asc" } }),
+      prisma.order.findMany({
+        take: 8, orderBy: { createdAt: "desc" },
+        include: { user: { select: { name: true, email: true } }, items: true },
+      }),
+      prisma.product.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
+    ]);
 
   const stats = [
-    { label: "Total Revenue", value: `$${(revenue._sum.total ?? 0).toFixed(2)}`, icon: "fa-dollar-sign", color: "#198754" },
-    { label: "Total Orders", value: totalOrders, icon: "fa-receipt", color: "#0d6efd" },
-    { label: "Customers", value: customers, icon: "fa-users", color: "#6f42c1" },
-    { label: "Products", value: products, icon: "fa-box", color: "#fd7e14" },
+    {
+      label: "Total Revenue",
+      value: `$${(revenue._sum.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      icon: "fa-dollar-sign",
+      color: "#10b981",
+      bg: "#ecfdf5",
+      change: "+12.5%",
+      positive: true,
+    },
+    {
+      label: "Total Orders",
+      value: totalOrders.toString(),
+      icon: "fa-receipt",
+      color: "#3b82f6",
+      bg: "#eff6ff",
+      change: pendingOrders > 0 ? `${pendingOrders} pending` : "All fulfilled",
+      positive: pendingOrders === 0,
+    },
+    {
+      label: "Customers",
+      value: customers.toString(),
+      icon: "fa-users",
+      color: "#8b5cf6",
+      bg: "#f5f3ff",
+      change: "Registered users",
+      positive: true,
+    },
+    {
+      label: "Products",
+      value: productCount.toString(),
+      icon: "fa-box",
+      color: "#f59e0b",
+      bg: "#fffbeb",
+      change: lowStock.length > 0 ? `${lowStock.length} low stock` : "All stocked",
+      positive: lowStock.length === 0,
+    },
   ];
 
-  const statusClass: Record<string, string> = {
-    PENDING: "badge-pending", PAID: "badge-paid", SHIPPED: "badge-shipped",
-    DELIVERED: "badge-delivered", CANCELLED: "badge-cancelled",
+  const statusColors: Record<string, { bg: string; color: string }> = {
+    PENDING:   { bg: "#fef3c7", color: "#92400e" },
+    PAID:      { bg: "#cffafe", color: "#155e75" },
+    SHIPPED:   { bg: "#dbeafe", color: "#1e40af" },
+    DELIVERED: { bg: "#d1fae5", color: "#065f46" },
+    CANCELLED: { bg: "#fee2e2", color: "#991b1b" },
   };
 
   return (
     <div>
-      <h2 className="fw-bold mb-4" style={{ color: "var(--dark)" }}>Dashboard</h2>
-
-      <div className="row g-3 mb-5">
+      {/* Stats Grid */}
+      <div className="row g-3 mb-4">
         {stats.map((s) => (
           <div key={s.label} className="col-sm-6 col-xl-3">
-            <div className="card border-0 shadow-sm p-4 d-flex flex-row align-items-center gap-3">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: 52, height: 52, background: s.color + "20", flexShrink: 0 }}
-              >
-                <i className={`fas ${s.icon}`} style={{ color: s.color, fontSize: 20 }} />
+            <div className="stat-card">
+              <div className="stat-icon" style={{ background: s.bg, color: s.color }}>
+                <i className={`fas ${s.icon}`} />
               </div>
-              <div>
-                <p className="text-muted mb-1" style={{ fontSize: "0.8rem" }}>{s.label}</p>
-                <h4 className="fw-bold mb-0">{s.value}</h4>
+              <div style={{ flex: 1 }}>
+                <div className="stat-label">{s.label}</div>
+                <div className="stat-value">{s.value}</div>
+                <div className="stat-change" style={{ color: s.positive ? "#10b981" : "#f59e0b" }}>
+                  <i className={`fas fa-${s.positive ? "arrow-up" : "exclamation-triangle"} me-1`} style={{ fontSize: "0.65rem" }} />
+                  {s.change}
+                </div>
               </div>
             </div>
           </div>
@@ -53,59 +90,205 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="row g-4">
-        <div className="col-lg-7">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex justify-content-between mb-3">
-                <h5 className="fw-bold">Recent Orders</h5>
-                <Link href="/admin/orders" className="btn btn-sm btn-outline-secondary">View All</Link>
-              </div>
-              <div className="table-responsive">
-                <table className="table mb-0">
+        {/* Recent Orders */}
+        <div className="col-lg-8">
+          <div className="data-card">
+            <div className="data-card-header">
+              <h2 className="data-card-title">Recent Orders</h2>
+              <Link href="/admin/orders" className="btn-admin-secondary" style={{ padding: "6px 14px", fontSize: "0.8rem" }}>
+                View All <i className="fas fa-arrow-right ms-1" />
+              </Link>
+            </div>
+            <div className="data-card-body">
+              {recentOrders.length === 0 ? (
+                <div className="empty-state" style={{ padding: "40px 20px" }}>
+                  <i className="fas fa-receipt" />
+                  <p>No orders yet</p>
+                </div>
+              ) : (
+                <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Order</th><th>Customer</th><th>Total</th><th>Status</th>
+                      <th>Order</th>
+                      <th>Customer</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recentOrders.map((o) => (
-                      <tr key={o.id} className="align-middle">
-                        <td className="font-monospace" style={{ fontSize: "0.8rem" }}>
-                          <Link href={`/admin/orders?id=${o.id}`}>#{o.id.slice(-8).toUpperCase()}</Link>
-                        </td>
-                        <td style={{ fontSize: "0.85rem" }}>{o.user.name ?? o.user.email}</td>
-                        <td>${o.total.toFixed(2)}</td>
-                        <td><span className={`badge ${statusClass[o.status]}`}>{o.status}</span></td>
-                      </tr>
-                    ))}
+                    {recentOrders.map((o) => {
+                      const sc = statusColors[o.status] ?? { bg: "#f0f0f0", color: "#333" };
+                      return (
+                        <tr key={o.id}>
+                          <td>
+                            <Link href={`/admin/orders?id=${o.id}`} style={{ fontFamily: "monospace", fontWeight: 600, color: "#d10024", fontSize: "0.8rem" }}>
+                              #{o.id.slice(-8).toUpperCase()}
+                            </Link>
+                          </td>
+                          <td>
+                            <div style={{ fontWeight: 500 }}>{o.user.name ?? "—"}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#888" }}>{o.user.email}</div>
+                          </td>
+                          <td>{o.items.length}</td>
+                          <td style={{ fontWeight: 700, color: "#1e2030" }}>${o.total.toFixed(2)}</td>
+                          <td>
+                            <span style={{
+                              background: sc.bg, color: sc.color,
+                              padding: "3px 10px", borderRadius: 20,
+                              fontSize: "0.72rem", fontWeight: 700,
+                            }}>
+                              {o.status}
+                            </span>
+                          </td>
+                          <td style={{ color: "#888", fontSize: "0.8rem" }}>
+                            {new Date(o.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="col-lg-5">
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <div className="d-flex justify-content-between mb-3">
-                <h5 className="fw-bold">Low Stock Alert</h5>
-                <Link href="/admin/products" className="btn btn-sm btn-outline-secondary">Manage</Link>
-              </div>
+        {/* Right column */}
+        <div className="col-lg-4">
+          {/* Low Stock Alert */}
+          <div className="data-card mb-4">
+            <div className="data-card-header">
+              <h2 className="data-card-title">
+                <i className="fas fa-exclamation-triangle me-2" style={{ color: "#f59e0b" }} />
+                Low Stock
+              </h2>
+              <Link href="/admin/products" className="btn-admin-secondary" style={{ padding: "5px 12px", fontSize: "0.78rem" }}>
+                Manage
+              </Link>
+            </div>
+            <div className="data-card-body">
               {lowStock.length === 0 ? (
-                <p className="text-muted text-center py-3">All products are well-stocked.</p>
+                <div style={{ padding: "24px 22px", textAlign: "center", color: "#10b981" }}>
+                  <i className="fas fa-check-circle fa-2x mb-2" style={{ display: "block" }} />
+                  <p style={{ margin: 0, fontSize: "0.85rem" }}>All products are well-stocked</p>
+                </div>
               ) : (
-                lowStock.map((p) => (
-                  <div key={p.id} className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                    <span style={{ fontSize: "0.9rem" }}>{p.name}</span>
-                    <span className={`badge ${p.stock === 0 ? "bg-danger" : "bg-warning text-dark"}`}>
-                      {p.stock === 0 ? "Out of stock" : `${p.stock} left`}
-                    </span>
-                  </div>
-                ))
+                <div style={{ padding: "4px 0" }}>
+                  {lowStock.map((p) => (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 22px", borderBottom: "1px solid #f0f2f7" }}>
+                      <div>
+                        <div style={{ fontWeight: 500, fontSize: "0.875rem" }}>{p.name}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#888" }}>{p.category}</div>
+                      </div>
+                      <span style={{
+                        background: p.stock === 0 ? "#fee2e2" : "#fef3c7",
+                        color: p.stock === 0 ? "#991b1b" : "#92400e",
+                        padding: "3px 10px", borderRadius: 20,
+                        fontSize: "0.72rem", fontWeight: 700,
+                        flexShrink: 0,
+                      }}>
+                        {p.stock === 0 ? "Out" : `${p.stock} left`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
+
+          {/* Quick Actions */}
+          <div className="data-card">
+            <div className="data-card-header">
+              <h2 className="data-card-title">Quick Actions</h2>
+            </div>
+            <div style={{ padding: "16px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { href: "/admin/products/new", icon: "fa-plus", label: "Add New Product", color: "#d10024" },
+                { href: "/admin/orders?status=PENDING", icon: "fa-clock", label: "View Pending Orders", color: "#f59e0b" },
+                { href: "/admin/customers", icon: "fa-users", label: "Manage Customers", color: "#8b5cf6" },
+                { href: "/admin/content", icon: "fa-pen", label: "Edit Site Content", color: "#3b82f6" },
+              ].map((a) => (
+                <Link
+                  key={a.href}
+                  href={a.href}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "12px 14px", borderRadius: 10,
+                    border: "1px solid #f0f2f7",
+                    textDecoration: "none", color: "#333",
+                    fontSize: "0.875rem", fontWeight: 500,
+                    transition: "border-color 0.15s, background 0.15s",
+                    background: "#fff",
+                  }}
+                >
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: a.color + "15", color: a.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+                    <i className={`fas ${a.icon}`} />
+                  </span>
+                  {a.label}
+                  <i className="fas fa-chevron-right ms-auto" style={{ fontSize: 11, color: "#ccc" }} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Products */}
+      <div className="data-card mt-4">
+        <div className="data-card-header">
+          <h2 className="data-card-title">Recently Added Products</h2>
+          <Link href="/admin/products" className="btn-admin-secondary" style={{ padding: "6px 14px", fontSize: "0.8rem" }}>
+            View All
+          </Link>
+        </div>
+        <div className="data-card-body">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topProducts.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f8f9fc", border: "1px solid #e8eaf0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                        {p.images[0] ? (
+                          <img src={p.images[0]} alt="" style={{ width: 36, height: 36, objectFit: "contain" }} />
+                        ) : (
+                          <i className="fas fa-image" style={{ color: "#ccc" }} />
+                        )}
+                      </div>
+                      <span style={{ fontWeight: 600 }}>{p.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ color: "#888" }}>{p.category}</td>
+                  <td style={{ fontWeight: 700, color: "#d10024" }}>${(p.salePrice ?? p.price).toFixed(2)}</td>
+                  <td>
+                    <span style={{
+                      background: p.stock === 0 ? "#fee2e2" : p.stock <= 5 ? "#fef3c7" : "#d1fae5",
+                      color: p.stock === 0 ? "#991b1b" : p.stock <= 5 ? "#92400e" : "#065f46",
+                      padding: "3px 10px", borderRadius: 20, fontSize: "0.72rem", fontWeight: 700,
+                    }}>
+                      {p.stock === 0 ? "Out of stock" : `${p.stock} in stock`}
+                    </span>
+                  </td>
+                  <td>
+                    <Link href={`/admin/products/${p.id}`} className="btn-icon" title="Edit">
+                      <i className="fas fa-edit" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

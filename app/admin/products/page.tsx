@@ -1,81 +1,168 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import Image from "next/image";
 import DeleteProductButton from "@/components/DeleteProductButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminProductsPage() {
-  const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+interface Props {
+  searchParams: { q?: string; category?: string };
+}
+
+export default async function AdminProductsPage({ searchParams }: Props) {
+  const { q, category } = searchParams;
+
+  const products = await prisma.product.findMany({
+    where: {
+      AND: [
+        q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { brand: { contains: q, mode: "insensitive" } }] } : {},
+        category ? { category: { equals: category, mode: "insensitive" } } : {},
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const allCategories = await prisma.product.groupBy({ by: ["category"] });
+
+  const stockSummary = {
+    total: products.length,
+    outOfStock: products.filter((p) => p.stock === 0).length,
+    lowStock: products.filter((p) => p.stock > 0 && p.stock <= 5).length,
+  };
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold mb-0" style={{ color: "var(--dark)" }}>Products</h2>
-        <Link href="/admin/products/new" className="btn btn-electro">
-          <i className="fas fa-plus me-2" /> Add Product
+      {/* Top bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Search */}
+          <form method="GET" style={{ display: "flex", gap: 8 }}>
+            <div className="admin-search" style={{ maxWidth: 260 }}>
+              <i className="fas fa-search search-icon" />
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Search products..."
+                className="admin-input"
+                style={{ paddingLeft: 36 }}
+              />
+            </div>
+            <select name="category" className="admin-input" style={{ width: 160 }}>
+              <option value="">All Categories</option>
+              {allCategories.map((c) => (
+                <option key={c.category} value={c.category} selected={category === c.category}>
+                  {c.category}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="btn-admin-secondary">Filter</button>
+            {(q || category) && (
+              <Link href="/admin/products" className="btn-admin-secondary">Clear</Link>
+            )}
+          </form>
+        </div>
+        <Link href="/admin/products/new" className="btn-admin-primary">
+          <i className="fas fa-plus" /> Add Product
         </Link>
       </div>
 
-      <div className="card border-0 shadow-sm">
-        <div className="table-responsive">
-          <table className="table mb-0">
-            <thead style={{ background: "#f8f9fa" }}>
-              <tr>
-                <th className="py-3 ps-3">Product</th>
-                <th>Category</th>
-                <th>Brand</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id} className="align-middle">
-                  <td className="ps-3 py-3">
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="border rounded d-flex align-items-center justify-content-center"
-                        style={{ width: 40, height: 40, background: "#f8f9fa", flexShrink: 0 }}>
-                        {p.images[0] ? (
-                          <Image src={p.images[0]} alt="" width={36} height={36} style={{ objectFit: "contain" }} />
-                        ) : (
-                          <i className="fas fa-image text-muted" />
-                        )}
-                      </div>
-                      <span className="fw-semibold" style={{ fontSize: "0.9rem" }}>{p.name}</span>
-                    </div>
-                  </td>
-                  <td className="text-capitalize">{p.category}</td>
-                  <td>{p.brand}</td>
-                  <td>
-                    <span style={{ color: "var(--primary)", fontWeight: 600 }}>${(p.salePrice ?? p.price).toFixed(2)}</span>
-                    {p.salePrice && <small className="text-muted ms-1 text-decoration-line-through">${p.price.toFixed(2)}</small>}
-                  </td>
-                  <td>
-                    <span className={`badge ${p.stock === 0 ? "bg-danger" : p.stock <= 5 ? "bg-warning text-dark" : "bg-success"}`}>
-                      {p.stock}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="d-flex gap-2">
-                      <Link href={`/admin/products/${p.id}`} className="btn btn-sm btn-outline-secondary">
-                        <i className="fas fa-edit" />
-                      </Link>
-                      <DeleteProductButton id={p.id} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {products.length === 0 && (
-          <div className="text-center py-5 text-muted">
-            <i className="fas fa-box-open fa-3x mb-3" />
-            <p>No products yet. <Link href="/admin/products/new">Add your first product</Link></p>
+      {/* Stock summary mini stats */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+        {[
+          { label: "Total Products", value: stockSummary.total, color: "#3b82f6", bg: "#eff6ff" },
+          { label: "Out of Stock", value: stockSummary.outOfStock, color: "#ef4444", bg: "#fee2e2" },
+          { label: "Low Stock", value: stockSummary.lowStock, color: "#f59e0b", bg: "#fef3c7" },
+        ].map((s) => (
+          <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, minWidth: 160 }}>
+            <span style={{ fontSize: "1.5rem", fontWeight: 800, color: s.color }}>{s.value}</span>
+            <span style={{ fontSize: "0.78rem", color: s.color, fontWeight: 600 }}>{s.label}</span>
           </div>
-        )}
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="data-card">
+        <div className="data-card-header">
+          <h2 className="data-card-title">
+            {q || category ? `Results (${products.length})` : `All Products (${products.length})`}
+          </h2>
+        </div>
+        <div className="data-card-body">
+          {products.length === 0 ? (
+            <div className="empty-state">
+              <i className="fas fa-box-open" />
+              <p>No products found.</p>
+              <Link href="/admin/products/new" className="btn-admin-primary">Add First Product</Link>
+            </div>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Brand</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 8, background: "#f8f9fc", border: "1px solid #e8eaf0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                          {p.images[0] ? (
+                            <img src={p.images[0]} alt="" style={{ width: 40, height: 40, objectFit: "contain" }} />
+                          ) : (
+                            <i className="fas fa-image" style={{ color: "#ccc" }} />
+                          )}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: "#1e2030" }}>{p.name}</div>
+                          <div style={{ fontSize: "0.72rem", color: "#aaa", fontFamily: "monospace" }}>/{p.slug}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ background: "#f0f2f7", color: "#555", padding: "3px 10px", borderRadius: 20, fontSize: "0.78rem", fontWeight: 600 }}>
+                        {p.category}
+                      </span>
+                    </td>
+                    <td style={{ color: "#666" }}>{p.brand}</td>
+                    <td>
+                      <span style={{ fontWeight: 700, color: "#d10024" }}>${(p.salePrice ?? p.price).toFixed(2)}</span>
+                      {p.salePrice && (
+                        <span style={{ fontSize: "0.75rem", color: "#aaa", textDecoration: "line-through", marginLeft: 6 }}>
+                          ${p.price.toFixed(2)}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span style={{
+                        background: p.stock === 0 ? "#fee2e2" : p.stock <= 5 ? "#fef3c7" : "#d1fae5",
+                        color: p.stock === 0 ? "#991b1b" : p.stock <= 5 ? "#92400e" : "#065f46",
+                        padding: "3px 10px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700,
+                      }}>
+                        {p.stock === 0 ? "Out of stock" : `${p.stock}`}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <Link href={`/product/${p.slug}`} className="btn-icon" title="View on store" target="_blank">
+                          <i className="fas fa-eye" />
+                        </Link>
+                        <Link href={`/admin/products/${p.id}`} className="btn-icon" title="Edit">
+                          <i className="fas fa-edit" />
+                        </Link>
+                        <DeleteProductButton id={p.id} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );
