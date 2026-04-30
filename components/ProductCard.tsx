@@ -1,89 +1,78 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import type { Product } from "@prisma/client";
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { addItem: addToCart } = useCart();
-  const { toggle, has } = useWishlist();
+  const addItem = useCart((s) => s.addItem);
+  const toggle = useWishlist((s) => s.toggle);
+  const has = useWishlist((s) => s.has);
 
   const price = product.salePrice ?? product.price;
-  const savings = product.salePrice
+  const discount = product.salePrice
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)
     : 0;
   const inWishlist = has(product.id);
+  const img = product.images?.[0] || "/img/product01.png";
 
   return (
-    <div className="product-card">
-      <div className="product-img" style={{ position: "relative" }}>
-        {savings > 0 && <span className="badge-sale">-{savings}%</span>}
-        {/* Wishlist heart */}
-        <button
-          onClick={() =>
-            toggle({
-              id: product.id,
-              name: product.name,
-              price: product.price,
-              salePrice: product.salePrice,
-              image: product.images[0] ?? "",
-              slug: product.slug,
-            })
-          }
-          style={{
-            position: "absolute",
-            top: 10,
-            right: 10,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            zIndex: 1,
-            padding: 4,
-          }}
-          title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
-        >
-          <i
-            className={inWishlist ? "fas fa-heart" : "far fa-heart"}
-            style={{ color: inWishlist ? "#d10024" : "#aaa", fontSize: 16 }}
-          />
-        </button>
-
-        {product.images[0] ? (
-          <Image src={product.images[0]} alt={product.name} fill style={{ objectFit: "contain" }} />
-        ) : (
-          <i className="fas fa-image fa-3x text-secondary" />
+    <div className="product">
+      <div className="product-img">
+        <Link href={`/product/${product.slug}`}>
+          <img src={img} alt={product.name} />
+        </Link>
+        {(discount > 0 || product.createdAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) && (
+          <div className="product-label">
+            {discount > 0 && <span className="sale">-{discount}%</span>}
+            <span className="new">NEW</span>
+          </div>
         )}
       </div>
-      <div className="card-body">
-        <Link href={`/product/${product.slug}`} className="product-name d-block mb-2">
-          {product.name}
-        </Link>
-        <div className="mb-3">
-          <span className="product-price">${price.toFixed(2)}</span>
+      <div className="product-body">
+        <p className="product-category">{product.category}</p>
+        <h3 className="product-name">
+          <Link href={`/product/${product.slug}`}>{product.name}</Link>
+        </h3>
+        <h4 className="product-price">
+          ${price.toFixed(2)}
           {product.salePrice && (
-            <span className="product-price-original">${product.price.toFixed(2)}</span>
+            <del className="product-old-price">${product.price.toFixed(2)}</del>
           )}
+        </h4>
+        <div className="product-rating">
+          <i className="fa fa-star" />
+          <i className="fa fa-star" />
+          <i className="fa fa-star" />
+          <i className="fa fa-star" />
+          <i className="fa fa-star-o" />
         </div>
+        <div className="product-btns">
+          <button
+            className="add-to-wishlist"
+            onClick={() => toggle({ id: product.id, name: product.name, slug: product.slug, price: product.price, salePrice: product.salePrice, image: img })}
+          >
+            <i className={inWishlist ? "fa fa-heart" : "fa fa-heart-o"} />
+            <span className="tooltipp">{inWishlist ? "remove from wishlist" : "add to wishlist"}</span>
+          </button>
+          <button className="add-to-compare">
+            <i className="fa fa-exchange" />
+            <span className="tooltipp">add to compare</span>
+          </button>
+          <button className="quick-view">
+            <i className="fa fa-eye" />
+            <span className="tooltipp">quick view</span>
+          </button>
+        </div>
+      </div>
+      <div className="add-to-cart">
         <button
-          className="btn-add-cart"
-          onClick={() =>
-            addToCart({
-              id: product.id,
-              name: product.name,
-              price,
-              image: product.images[0] ?? "",
-              slug: product.slug,
-            })
-          }
+          className="add-to-cart-btn"
           disabled={product.stock === 0}
+          onClick={() => addItem({ id: product.id, name: product.name, slug: product.slug, price, image: img })}
         >
-          {product.stock === 0 ? (
-            "Out of Stock"
-          ) : (
-            <><i className="fas fa-cart-plus me-1" />Add to Cart</>
-          )}
+          <i className="fa fa-shopping-cart" /> {product.stock === 0 ? "out of stock" : "add to cart"}
         </button>
       </div>
     </div>

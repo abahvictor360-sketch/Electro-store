@@ -6,21 +6,23 @@ export interface WishlistItem {
   name: string;
   slug: string;
   price: number;
+  salePrice: number | null;
   image: string;
 }
 
 interface WishlistStore {
   items: WishlistItem[];
-  toggleItem: (item: WishlistItem) => void;
+  toggle: (item: WishlistItem) => void;
+  has: (id: string) => boolean;
   removeItem: (id: string) => void;
   clearWishlist: () => void;
 }
 
 export const useWishlist = create<WishlistStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       items: [],
-      toggleItem: (item) =>
+      toggle: (item) =>
         set((state) => {
           const exists = state.items.some((i) => i.id === item.id);
           return {
@@ -29,6 +31,7 @@ export const useWishlist = create<WishlistStore>()(
               : [...state.items, item],
           };
         }),
+      has: (id) => get().items.some((i) => i.id === id),
       removeItem: (id) =>
         set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
       clearWishlist: () => set({ items: [] }),
