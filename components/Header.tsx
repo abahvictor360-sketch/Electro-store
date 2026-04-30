@@ -64,7 +64,15 @@ function HeaderInner({ config }: { config: SiteConfigData }) {
             <div className="col-md-3">
               <div className="header-logo">
                 <Link href="/" className="logo">
-                  <img src="/img/logo.png" alt="Electro" />
+                  {config.logoImageUrl ? (
+                    <img src={config.logoImageUrl} alt={config.logoText || config.siteTitle} />
+                  ) : config.logoText ? (
+                    <span style={{ fontSize: "1.8rem", fontWeight: 800, color: "#d10024", letterSpacing: "-1px", textDecoration: "none" }}>
+                      {config.logoText}
+                    </span>
+                  ) : (
+                    <img src="/img/logo.png" alt="Electro" />
+                  )}
                 </Link>
               </div>
             </div>

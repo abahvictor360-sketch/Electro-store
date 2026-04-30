@@ -196,6 +196,55 @@ export default async function AdminDashboard() {
           </table>
         </div>
       </div>
+
+      {/* Platform Features Checklist */}
+      <div className="data-card mt-4">
+        <div className="data-card-header">
+          <h2 className="data-card-title">
+            <i className="fas fa-tasks" style={{ marginRight: 8, color: "#d10024" }} />
+            Platform Features
+          </h2>
+          <span style={{ fontSize: "0.72rem", color: "#10b981", fontWeight: 700, background: "#d1fae5", padding: "4px 12px", borderRadius: 20 }}>
+            <i className="fas fa-check-circle" style={{ marginRight: 4 }} />All Active
+          </span>
+        </div>
+        <div style={{ padding: "8px 22px 18px" }}>
+          <div className="row g-3">
+            {[
+              { icon: "fa-mouse-pointer",  label: "Client-Side Interaction",  desc: "Cart, wishlist, search — all reactive without page reloads",   color: "#3b82f6" },
+              { icon: "fa-shield-alt",     label: "Admin Panel",              desc: "Protected dashboard for managing products, orders & customers",  color: "#d10024" },
+              { icon: "fa-user-plus",      label: "Customer Registration",    desc: "Email/password sign-up with bcrypt hashing via NextAuth",        color: "#8b5cf6" },
+              { icon: "fa-shopping-cart",  label: "Add to Cart System",       desc: "Zustand-powered cart with localStorage persistence",             color: "#f59e0b" },
+              { icon: "fa-search",         label: "Search Products",          desc: "Full-text search by name/description with category filters",     color: "#06b6d4" },
+              { icon: "fa-credit-card",    label: "Simple Payment Structure", desc: "Stripe Checkout with card, Apple Pay & Google Pay support",      color: "#10b981" },
+              { icon: "fa-list-alt",       label: "List Orders",              desc: "Customer order history with status timeline & item preview",     color: "#6366f1" },
+              { icon: "fa-map-marker-alt", label: "Track Orders",             desc: "Real-time status tracking with progress bar & tracking number",  color: "#ec4899" },
+              { icon: "fa-file-pdf",       label: "Download Invoice (PDF)",   desc: "Auto-generated PDF invoices with order items and totals",        color: "#ef4444" },
+              { icon: "fa-user-edit",      label: "View / Update Profile",    desc: "Name, email, password & saved address management",               color: "#f97316" },
+              { icon: "fa-clipboard-list", label: "Order Management",         desc: "Admin order table with status updates & tracking assignment",    color: "#14b8a6" },
+              { icon: "fa-boxes",          label: "Product Management",       desc: "Full CRUD with images, categories, stock & sale prices",         color: "#a855f7" },
+              { icon: "fa-users-cog",      label: "Customer Management",      desc: "View all customers, order counts, spend totals & enable/disable", color: "#64748b" },
+            ].map((feat) => (
+              <div key={feat.label} className="col-xl-4 col-md-6">
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "13px 16px", border: "1px solid #f0f2f7", borderRadius: 10, background: "#fff", height: "100%" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 9, background: feat.color + "15", color: feat.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 14 }}>
+                    <i className={`fas ${feat.icon}`} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                      <span style={{ fontWeight: 700, fontSize: "0.84rem", color: "#1e2030" }}>{feat.label}</span>
+                      <span style={{ flexShrink: 0, width: 18, height: 18, borderRadius: "50%", background: "#d1fae5", color: "#065f46", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                        <i className="fas fa-check" />
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.74rem", color: "#888", lineHeight: 1.45 }}>{feat.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

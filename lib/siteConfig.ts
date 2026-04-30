@@ -1,27 +1,63 @@
+export interface HeroSlide {
+  id: string;
+  image: string;        // URL
+  title: string;
+  subtitle: string;
+  btnText: string;
+  btnLink: string;
+  badgeText: string;
+}
+
+export interface ShopBanner {
+  id: string;
+  image: string;        // URL e.g. /img/shop01.png
+  title: string;        // e.g. "Laptop\nCollection"
+  link: string;
+}
+
+export interface AnnouncementBanner {
+  enabled: boolean;
+  text: string;
+  bgColor: string;
+  textColor: string;
+  link: string;
+}
+
 export interface SiteConfigData {
-  banner: {
-    enabled: boolean;
-    text: string;
-    bgColor: string;
-    textColor: string;
-    link: string;
-  };
-  hero: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    primaryBtnText: string;
-    primaryBtnLink: string;
-    secondaryBtnText: string;
-    secondaryBtnLink: string;
-    bgColor: string;
-  };
+  // ── Site identity ───────────────────────────────
+  siteTitle: string;
+  tagline: string;
+  logoText: string;
+  logoImageUrl: string;   // empty = use text logo
+
+  // ── Announcement banner (top of every page) ────
+  banner: AnnouncementBanner;
+
+  // ── Hero / slider ───────────────────────────────
+  heroSlides: HeroSlide[];
+
+  // ── Category shop banners (3 tiles on homepage) ─
+  shopBanners: ShopBanner[];
+
+  // ── Header ──────────────────────────────────────
   header: {
-    logo: string;
     phone: string;
     showSearch: boolean;
-    navLinks: { label: string; href: string }[];
   };
+
+  // ── Homepage sections ───────────────────────────
+  homepage: {
+    showNewProducts: boolean;
+    newProductsTitle: string;
+    showTopSelling: boolean;
+    topSellingTitle: string;
+    showHotDeals: boolean;
+    hotDealsTitle: string;
+    hotDealsSubtitle: string;
+    showNewsletter: boolean;
+  };
+
+  // ── Footer ──────────────────────────────────────
   footer: {
     about: string;
     email: string;
@@ -29,19 +65,14 @@ export interface SiteConfigData {
     address: string;
     copyright: string;
   };
-  homepage: {
-    showNewArrivals: boolean;
-    newArrivalsTitle: string;
-    showHotDeals: boolean;
-    hotDealsTitle: string;
-    showNewsletter: boolean;
-    newsletterTitle: string;
-    newsletterSubtitle: string;
-    showCategories: boolean;
-  };
 }
 
 export const defaultConfig: SiteConfigData = {
+  siteTitle: "Electro Store",
+  tagline: "Shop the latest electronics at the best prices.",
+  logoText: "Electro",
+  logoImageUrl: "",
+
   banner: {
     enabled: false,
     text: "🎉 Free shipping on all orders over $50 — Limited time offer!",
@@ -49,41 +80,47 @@ export const defaultConfig: SiteConfigData = {
     textColor: "#ffffff",
     link: "/store",
   },
-  hero: {
-    badge: "New Arrivals",
-    title: "Latest Electronics\nat Best Prices",
-    subtitle: "Shop thousands of top-brand laptops, smartphones, cameras and accessories.",
-    primaryBtnText: "Shop Now",
-    primaryBtnLink: "/store",
-    secondaryBtnText: "View Deals",
-    secondaryBtnLink: "/store?category=laptops",
-    bgColor: "#2b2d42",
-  },
+
+  heroSlides: [
+    {
+      id: "slide-1",
+      image: "/img/hero.jpg",
+      title: "Latest Electronics\nat Best Prices",
+      subtitle: "Shop thousands of top-brand laptops, smartphones, cameras and accessories.",
+      btnText: "Shop Now",
+      btnLink: "/store",
+      badgeText: "New Arrivals",
+    },
+  ],
+
+  shopBanners: [
+    { id: "b1", image: "/img/shop01.png", title: "Laptop\nCollection",     link: "/store?category=Laptops" },
+    { id: "b2", image: "/img/shop03.png", title: "Accessories\nCollection", link: "/store?category=Accessories" },
+    { id: "b3", image: "/img/shop02.png", title: "Cameras\nCollection",    link: "/store?category=Cameras" },
+  ],
+
   header: {
-    logo: "Electro",
     phone: "+1 (800) ELECTRO",
     showSearch: true,
-    navLinks: [
-      { label: "Home", href: "/" },
-      { label: "Shop", href: "/store" },
-    ],
   },
+
+  homepage: {
+    showNewProducts: true,
+    newProductsTitle: "New Products",
+    showTopSelling: true,
+    topSellingTitle: "Top Selling",
+    showHotDeals: true,
+    hotDealsTitle: "Hot Deal Of The Week",
+    hotDealsSubtitle: "New Collection Up to 50% OFF",
+    showNewsletter: true,
+  },
+
   footer: {
     about: "Your one-stop shop for the latest electronics — laptops, smartphones, cameras and accessories.",
     email: "support@electro.store",
     phone: "+1 (800) ELECTRO",
     address: "123 Tech Ave, Silicon Valley, CA",
     copyright: "Electro Store. All rights reserved.",
-  },
-  homepage: {
-    showNewArrivals: true,
-    newArrivalsTitle: "New Arrivals",
-    showHotDeals: true,
-    hotDealsTitle: "Hot Deals",
-    showNewsletter: true,
-    newsletterTitle: "Subscribe to Our Newsletter",
-    newsletterSubtitle: "Get the latest deals and new arrivals straight to your inbox.",
-    showCategories: true,
   },
 };
 
@@ -92,8 +129,29 @@ export async function getSiteConfig(): Promise<SiteConfigData> {
     const { prisma } = await import("@/lib/prisma");
     const row = await prisma.siteConfig.findUnique({ where: { id: "site" } });
     if (!row) return defaultConfig;
-    return { ...defaultConfig, ...(row.data as Partial<SiteConfigData>) };
+    // Deep-merge: DB value takes priority, defaults fill missing keys
+    return deepMerge(defaultConfig, row.data as Partial<SiteConfigData>);
   } catch {
     return defaultConfig;
   }
+}
+
+function deepMerge<T extends object>(defaults: T, overrides: Partial<T>): T {
+  const result = { ...defaults };
+  for (const key in overrides) {
+    const v = overrides[key];
+    if (v !== undefined && v !== null) {
+      if (Array.isArray(v)) {
+        (result as Record<string, unknown>)[key] = v;
+      } else if (typeof v === "object" && typeof defaults[key] === "object" && !Array.isArray(defaults[key])) {
+        (result as Record<string, unknown>)[key] = deepMerge(
+          defaults[key] as object,
+          v as Partial<object>
+        );
+      } else {
+        (result as Record<string, unknown>)[key] = v;
+      }
+    }
+  }
+  return result;
 }
