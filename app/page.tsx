@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSiteConfig } from "@/lib/siteConfig";
-import ProductCard from "@/components/ProductCard";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SessionProvider from "@/components/SessionProvider";
+import HomeSlider from "@/components/HomeSlider";
 
 export const dynamic = "force-dynamic";
 
@@ -12,142 +12,239 @@ export default async function HomePage() {
   const config = await getSiteConfig();
 
   let newProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
-  let saleProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
+  let topProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
 
   try {
-    [newProducts, saleProducts] = await Promise.all([
+    [newProducts, topProducts] = await Promise.all([
       prisma.product.findMany({ take: 8, orderBy: { createdAt: "desc" } }),
-      prisma.product.findMany({ take: 4, where: { salePrice: { not: null } }, orderBy: { createdAt: "desc" } }),
+      prisma.product.findMany({ take: 8, orderBy: { createdAt: "asc" } }),
     ]);
   } catch {
-    // DB unavailable at build time — render empty state
+    // DB unavailable at build time
   }
-
-  const { hero, homepage } = config;
-
-  const categories = [
-    { name: "Laptops", icon: "fa-laptop", color: "#4e73df" },
-    { name: "Smartphones", icon: "fa-mobile-alt", color: "#1cc88a" },
-    { name: "Cameras", icon: "fa-camera", color: "#36b9cc" },
-    { name: "Accessories", icon: "fa-headphones", color: "#f6c23e" },
-  ];
 
   return (
     <SessionProvider>
       <Header config={config} />
-      <main style={{ minHeight: "70vh" }}>
-        {/* Hero */}
-        <section className="hero-section" style={{ background: `linear-gradient(135deg, ${hero.bgColor} 0%, #1a1c2b 100%)` }}>
-          <div className="container">
-            <div className="row align-items-center">
-              <div className="col-lg-6">
-                <p className="text-warning fw-semibold mb-2">{hero.badge}</p>
-                <h1 style={{ whiteSpace: "pre-line" }}>{hero.title}</h1>
-                <p className="mt-3 mb-4" style={{ color: "rgba(255,255,255,0.75)", fontSize: "1.05rem" }}>
-                  {hero.subtitle}
-                </p>
-                <Link href={hero.primaryBtnLink} className="btn btn-electro px-4 py-2 me-3">
-                  {hero.primaryBtnText} <i className="fas fa-arrow-right ms-2" />
-                </Link>
-                <Link href={hero.secondaryBtnLink} className="btn btn-outline-light px-4 py-2">
-                  {hero.secondaryBtnText}
-                </Link>
+
+      {/* SECTION — Shop Banners */}
+      <div className="section">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-4 col-xs-6">
+              <div className="shop">
+                <div className="shop-img">
+                  <img src="/img/shop01.png" alt="Laptop Collection" />
+                </div>
+                <div className="shop-body">
+                  <h3>Laptop<br />Collection</h3>
+                  <Link href="/store?category=laptops" className="cta-btn">
+                    Shop now <i className="fa fa-arrow-circle-right" />
+                  </Link>
+                </div>
               </div>
-              <div className="col-lg-6 d-none d-lg-flex justify-content-center">
-                <i className="fas fa-laptop" style={{ fontSize: "160px", color: "rgba(255,255,255,0.08)" }} />
+            </div>
+
+            <div className="col-md-4 col-xs-6">
+              <div className="shop">
+                <div className="shop-img">
+                  <img src="/img/shop03.png" alt="Accessories Collection" />
+                </div>
+                <div className="shop-body">
+                  <h3>Accessories<br />Collection</h3>
+                  <Link href="/store?category=accessories" className="cta-btn">
+                    Shop now <i className="fa fa-arrow-circle-right" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-4 col-xs-6">
+              <div className="shop">
+                <div className="shop-img">
+                  <img src="/img/shop02.png" alt="Cameras Collection" />
+                </div>
+                <div className="shop-body">
+                  <h3>Cameras<br />Collection</h3>
+                  <Link href="/store?category=cameras" className="cta-btn">
+                    Shop now <i className="fa fa-arrow-circle-right" />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
+      {/* /SECTION */}
 
-        {/* Categories */}
-        {homepage.showCategories && (
-          <section className="py-5">
-            <div className="container">
-              <h2 className="section-title">Shop by Category</h2>
-              <div className="row g-3">
-                {categories.map((cat) => (
-                  <div key={cat.name} className="col-6 col-md-3">
-                    <Link href={`/store?category=${cat.name.toLowerCase()}`} className="text-decoration-none">
-                      <div
-                        className="rounded-3 p-4 text-center"
-                        style={{ background: cat.color + "15", border: `1px solid ${cat.color}30` }}
-                      >
-                        <i className={`fas ${cat.icon} fa-2x mb-3`} style={{ color: cat.color }} />
-                        <p className="fw-semibold mb-0" style={{ color: "#333" }}>{cat.name}</p>
+      {/* SECTION — New Products */}
+      <div className="section">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <div className="section-title">
+                <h3 className="title">New Products</h3>
+                <div className="section-nav">
+                  <ul className="section-tab-nav tab-nav">
+                    <li className="active"><a data-toggle="tab" href="#tab1">All</a></li>
+                    <li><a data-toggle="tab" href="#tab1">Laptops</a></li>
+                    <li><a data-toggle="tab" href="#tab1">Smartphones</a></li>
+                    <li><a data-toggle="tab" href="#tab1">Cameras</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-12">
+              <div className="row">
+                <div className="products-tabs">
+                  <div id="tab1" className="tab-pane active">
+                    {newProducts.length === 0 ? (
+                      <div className="products-slick" data-nav="#slick-nav-1">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <div key={n} className="product">
+                            <div className="product-img">
+                              <img src={`/img/product0${n}.png`} alt="Product" />
+                            </div>
+                            <div className="product-body">
+                              <p className="product-category">Electronics</p>
+                              <h3 className="product-name"><a href="/store">Sample Product</a></h3>
+                              <h4 className="product-price">$0.00</h4>
+                              <div className="product-rating">
+                                <i className="fa fa-star" /><i className="fa fa-star" /><i className="fa fa-star" />
+                                <i className="fa fa-star" /><i className="fa fa-star-o" />
+                              </div>
+                              <div className="product-btns">
+                                <button className="add-to-wishlist"><i className="fa fa-heart-o" /><span className="tooltipp">add to wishlist</span></button>
+                                <button className="quick-view"><i className="fa fa-eye" /><span className="tooltipp">quick view</span></button>
+                              </div>
+                            </div>
+                            <div className="add-to-cart">
+                              <Link href="/store" className="add-to-cart-btn"><i className="fa fa-shopping-cart" /> Browse Products</Link>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </Link>
+                    ) : (
+                      <HomeSlider products={newProducts} navId="slick-nav-1" />
+                    )}
+                    <div id="slick-nav-1" className="products-slick-nav" />
                   </div>
-                ))}
+                </div>
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </div>
+      </div>
+      {/* /SECTION */}
 
-        {/* New Arrivals */}
-        {homepage.showNewArrivals && (
-          <section className="py-5 bg-light">
-            <div className="container">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="section-title mb-0">{homepage.newArrivalsTitle}</h2>
-                <Link href="/store" className="btn btn-sm btn-outline-danger">View All</Link>
+      {/* HOT DEAL SECTION */}
+      <div id="hot-deal" className="section">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <div className="hot-deal">
+                <ul className="hot-deal-countdown" id="countdown">
+                  <li><div><h3>02</h3><span>Days</span></div></li>
+                  <li><div><h3>10</h3><span>Hours</span></div></li>
+                  <li><div><h3>34</h3><span>Mins</span></div></li>
+                  <li><div><h3>60</h3><span>Secs</span></div></li>
+                </ul>
+                <h2 className="text-uppercase">hot deal this week</h2>
+                <p>New Collection Up to 50% OFF</p>
+                <Link href="/store?sale=true" className="primary-btn cta-btn">Shop now</Link>
               </div>
-              {newProducts.length === 0 ? (
-                <div className="text-center py-5 text-muted">
-                  <i className="fas fa-box-open fa-3x mb-3" />
-                  <p>No products yet. Add products via the admin panel.</p>
-                  <Link href="/admin/products" className="btn btn-electro mt-2">Go to Admin</Link>
-                </div>
-              ) : (
-                <div className="row g-3">
-                  {newProducts.map((p) => (
-                    <div key={p.id} className="col-6 col-md-4 col-lg-3">
-                      <ProductCard product={p} />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </section>
-        )}
+          </div>
+        </div>
+      </div>
+      {/* /HOT DEAL SECTION */}
 
-        {/* Hot Deals */}
-        {homepage.showHotDeals && saleProducts.length > 0 && (
-          <section className="py-5">
-            <div className="container">
-              <h2 className="section-title">{homepage.hotDealsTitle}</h2>
-              <div className="row g-3">
-                {saleProducts.map((p) => (
-                  <div key={p.id} className="col-6 col-md-4 col-lg-3">
-                    <ProductCard product={p} />
+      {/* SECTION — Top Selling */}
+      <div className="section">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <div className="section-title">
+                <h3 className="title">Top Selling</h3>
+                <div className="section-nav">
+                  <ul className="section-tab-nav tab-nav">
+                    <li className="active"><a data-toggle="tab" href="#tab2">All</a></li>
+                    <li><a data-toggle="tab" href="#tab2">Laptops</a></li>
+                    <li><a data-toggle="tab" href="#tab2">Smartphones</a></li>
+                    <li><a data-toggle="tab" href="#tab2">Cameras</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-12">
+              <div className="row">
+                <div className="products-tabs">
+                  <div id="tab2" className="tab-pane fade in active">
+                    {topProducts.length === 0 ? (
+                      <div className="products-slick" data-nav="#slick-nav-2">
+                        {[6, 7, 8, 9, 1].map((n) => (
+                          <div key={n} className="product">
+                            <div className="product-img">
+                              <img src={`/img/product0${n}.png`} alt="Product" />
+                            </div>
+                            <div className="product-body">
+                              <p className="product-category">Electronics</p>
+                              <h3 className="product-name"><a href="/store">Sample Product</a></h3>
+                              <h4 className="product-price">$0.00</h4>
+                              <div className="product-rating">
+                                <i className="fa fa-star" /><i className="fa fa-star" /><i className="fa fa-star" />
+                                <i className="fa fa-star" /><i className="fa fa-star-o" />
+                              </div>
+                              <div className="product-btns">
+                                <button className="add-to-wishlist"><i className="fa fa-heart-o" /><span className="tooltipp">add to wishlist</span></button>
+                                <button className="quick-view"><i className="fa fa-eye" /><span className="tooltipp">quick view</span></button>
+                              </div>
+                            </div>
+                            <div className="add-to-cart">
+                              <Link href="/store" className="add-to-cart-btn"><i className="fa fa-shopping-cart" /> Browse Products</Link>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <HomeSlider products={topProducts} navId="slick-nav-2" />
+                    )}
+                    <div id="slick-nav-2" className="products-slick-nav" />
                   </div>
-                ))}
+                </div>
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </div>
+      </div>
+      {/* /SECTION */}
 
-        {/* Newsletter */}
-        {homepage.showNewsletter && (
-          <section className="py-5" style={{ background: "var(--dark)", color: "#fff" }}>
-            <div className="container text-center">
-              <h3 className="fw-bold mb-2">{homepage.newsletterTitle}</h3>
-              <p style={{ color: "rgba(255,255,255,0.7)" }} className="mb-4">
-                {homepage.newsletterSubtitle}
-              </p>
-              <form className="d-flex justify-content-center gap-2 flex-wrap">
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="Your email address"
-                  style={{ maxWidth: 360, borderRadius: 2 }}
-                />
-                <button type="submit" className="btn btn-electro px-4">Subscribe</button>
-              </form>
+      {/* NEWSLETTER */}
+      <div id="newsletter" className="section">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <div className="newsletter">
+                <p>Sign Up for the <strong>NEWSLETTER</strong></p>
+                <form>
+                  <input className="input" type="email" placeholder="Enter Your Email" />
+                  <button className="newsletter-btn"><i className="fa fa-envelope" /> Subscribe</button>
+                </form>
+                <ul className="newsletter-follow">
+                  <li><a href="#"><i className="fa fa-facebook" /></a></li>
+                  <li><a href="#"><i className="fa fa-twitter" /></a></li>
+                  <li><a href="#"><i className="fa fa-instagram" /></a></li>
+                  <li><a href="#"><i className="fa fa-pinterest" /></a></li>
+                </ul>
+              </div>
             </div>
-          </section>
-        )}
-      </main>
+          </div>
+        </div>
+      </div>
+      {/* /NEWSLETTER */}
+
       <Footer config={config} />
     </SessionProvider>
   );

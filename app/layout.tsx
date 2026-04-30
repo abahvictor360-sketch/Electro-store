@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "Electro Store — Electronics eCommerce",
+  title: "Electro - HTML Ecommerce Template",
   description: "Shop the latest electronics — laptops, smartphones, cameras and more.",
 };
 
@@ -10,21 +10,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-        />
+        <meta charSet="utf-8" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet" />
+        <link rel="stylesheet" href="/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="/css/slick.css" />
+        <link rel="stylesheet" href="/css/slick-theme.css" />
+        <link rel="stylesheet" href="/css/nouislider.min.css" />
+        <link rel="stylesheet" href="/css/font-awesome.min.css" />
+        <link rel="stylesheet" href="/css/style.css" />
       </head>
       <body>
         {children}
-        <script
-          src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-          async
-        />
+        <Script src="/js/jquery.min.js" strategy="beforeInteractive" />
+        <Script src="/js/bootstrap.min.js" strategy="afterInteractive" />
+        <Script src="/js/slick.min.js" strategy="afterInteractive" />
+        <Script src="/js/nouislider.min.js" strategy="afterInteractive" />
+        <Script src="/js/jquery.zoom.min.js" strategy="afterInteractive" />
+        <Script src="/js/main.js" strategy="afterInteractive" />
       </body>
     </html>
   );

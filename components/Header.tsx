@@ -1,26 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { signOut, useSession } from "next-auth/react";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import type { SiteConfigData } from "@/lib/siteConfig";
 
 function HeaderInner({ config }: { config: SiteConfigData }) {
   const cartItems = useCart((s) => s.items);
   const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const wishlistItems = useWishlist((s) => s.items);
-
   const { data: session } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("q") ?? "");
-
-  useEffect(() => {
-    setSearch(searchParams.get("q") ?? "");
-  }, [searchParams]);
+  const [search, setSearch] = useState("");
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -30,135 +24,159 @@ function HeaderInner({ config }: { config: SiteConfigData }) {
   const { header } = config;
 
   return (
-    <>
-      {/* Announcement Banner */}
-      {config.banner.enabled && (
-        <div
-          className="text-center py-1 px-3"
-          style={{ background: config.banner.bgColor, color: config.banner.textColor, fontSize: "0.85rem" }}
-        >
-          {config.banner.link ? (
-            <Link href={config.banner.link} style={{ color: config.banner.textColor, textDecoration: "none" }}>
-              {config.banner.text}
-            </Link>
-          ) : (
-            config.banner.text
-          )}
-        </div>
-      )}
-
-      {/* Top Bar */}
-      <div className="top-bar">
-        <div className="container d-flex justify-content-between">
-          <span><i className="fas fa-phone me-1" /> {header.phone}</span>
-          <div className="d-flex gap-3">
+    <header>
+      {/* TOP HEADER */}
+      <div id="top-header">
+        <div className="container">
+          <ul className="header-links pull-left">
+            <li><a href="#"><i className="fa fa-phone" /> {header.phone}</a></li>
+            <li><Link href="/store"><i className="fa fa-tag" /> Shop Now</Link></li>
+          </ul>
+          <ul className="header-links pull-right">
             {session ? (
               <>
-                <Link href="/profile">My Account</Link>
-                <button
-                  className="btn btn-link p-0 text-white-50"
-                  style={{ fontSize: "0.8rem", textDecoration: "none" }}
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                >
-                  Logout
-                </button>
+                <li><Link href="/profile"><i className="fa fa-user-o" /> My Account</Link></li>
+                <li>
+                  <button
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, font: "inherit" }}
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                  >
+                    <i className="fa fa-sign-out" /> Logout
+                  </button>
+                </li>
               </>
             ) : (
               <>
-                <Link href="/auth/login">Login</Link>
-                <Link href="/auth/register">Register</Link>
+                <li><Link href="/auth/login"><i className="fa fa-user-o" /> Login</Link></li>
+                <li><Link href="/auth/register"><i className="fa fa-pencil" /> Register</Link></li>
               </>
             )}
+          </ul>
+        </div>
+      </div>
+      {/* /TOP HEADER */}
+
+      {/* MAIN HEADER */}
+      <div id="header">
+        <div className="container">
+          <div className="row">
+            {/* LOGO */}
+            <div className="col-md-3">
+              <div className="header-logo">
+                <Link href="/" className="logo">
+                  <img src="/img/logo.png" alt="Electro" />
+                </Link>
+              </div>
+            </div>
+            {/* /LOGO */}
+
+            {/* SEARCH BAR */}
+            <div className="col-md-6">
+              <div className="header-search">
+                <form onSubmit={handleSearch}>
+                  <select className="input-select">
+                    <option value="0">All Categories</option>
+                    <option value="laptops">Laptops</option>
+                    <option value="smartphones">Smartphones</option>
+                    <option value="cameras">Cameras</option>
+                    <option value="accessories">Accessories</option>
+                  </select>
+                  <input
+                    className="input"
+                    placeholder="Search here"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <button type="submit" className="search-btn">Search</button>
+                </form>
+              </div>
+            </div>
+            {/* /SEARCH BAR */}
+
+            {/* ACCOUNT */}
+            <div className="col-md-3 clearfix">
+              <div className="header-ctn">
+                {/* Wishlist */}
+                <div>
+                  <Link href="/wishlist">
+                    <i className="fa fa-heart-o" />
+                    <span>Your Wishlist</span>
+                    <div className="qty">{wishlistItems.length}</div>
+                  </Link>
+                </div>
+                {/* /Wishlist */}
+
+                {/* Cart */}
+                <div className="dropdown">
+                  <Link href="/cart" className="dropdown-toggle" data-toggle="dropdown">
+                    <i className="fa fa-shopping-cart" />
+                    <span>Your Cart</span>
+                    <div className="qty">{cartCount}</div>
+                  </Link>
+                  <div className="cart-dropdown">
+                    <div className="cart-list">
+                      {cartItems.slice(0, 3).map((item) => (
+                        <div key={item.id} className="product-widget">
+                          <div className="product-img">
+                            <img src={item.image || "/img/product01.png"} alt={item.name} />
+                          </div>
+                          <div className="product-body">
+                            <h3 className="product-name"><Link href={`/product/${item.slug}`}>{item.name}</Link></h3>
+                            <h4 className="product-price"><span className="qty">{item.quantity}x</span>${item.price.toFixed(2)}</h4>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="cart-summary">
+                      <small>{cartCount} Item(s) selected</small>
+                      <h5>SUBTOTAL: ${cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)}</h5>
+                    </div>
+                    <div className="cart-btns">
+                      <Link href="/cart">View Cart</Link>
+                      <Link href="/checkout">Checkout <i className="fa fa-arrow-circle-right" /></Link>
+                    </div>
+                  </div>
+                </div>
+                {/* /Cart */}
+
+                {/* Menu Toggle */}
+                <div className="menu-toggle">
+                  <a href="#">
+                    <i className="fa fa-bars" />
+                    <span>Menu</span>
+                  </a>
+                </div>
+                {/* /Menu Toggle */}
+              </div>
+            </div>
+            {/* /ACCOUNT */}
           </div>
         </div>
       </div>
+      {/* /MAIN HEADER */}
 
-      {/* Main Navbar */}
-      <nav className="navbar navbar-electro navbar-expand-lg py-2">
+      {/* NAVIGATION */}
+      <nav id="navigation">
         <div className="container">
-          <Link href="/" className="navbar-brand">
-            {header.logo}<span>.</span>
-          </Link>
-
-          {header.showSearch && (
-            <form className="d-flex flex-grow-1 mx-4 search-bar" onSubmit={handleSearch}>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search products..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <button type="submit" className="px-3">
-                <i className="fas fa-search" />
-              </button>
-            </form>
-          )}
-
-          {/* Icons */}
-          <div className="d-flex align-items-center gap-3">
-            {/* Wishlist */}
-            <Link href="/wishlist" className="text-white position-relative" style={{ textDecoration: "none" }} title="Wishlist">
-              <i className="fas fa-heart fs-5" />
-              {wishlistItems.length > 0 && (
-                <span className="cart-badge">{wishlistItems.length}</span>
-              )}
-            </Link>
-
-            {/* Cart */}
-            <Link href="/cart" className="text-white position-relative" style={{ textDecoration: "none" }} title="Cart">
-              <i className="fas fa-shopping-cart fs-5" />
-              {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-            </Link>
-
-            <button
-              className="navbar-toggler ms-1"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navMain"
-            >
-              <i className="fas fa-bars text-white" />
-            </button>
-          </div>
-
-          <div className="collapse navbar-collapse" id="navMain">
-            <ul className="navbar-nav ms-auto">
-              {header.navLinks.map((l) => (
-                <li key={l.href} className="nav-item">
-                  <Link href={l.href} className="nav-link">{l.label}</Link>
-                </li>
-              ))}
-              <li className="nav-item dropdown">
-                <a className="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">
-                  Categories
-                </a>
-                <ul className="dropdown-menu">
-                  {["Laptops", "Smartphones", "Cameras", "Accessories"].map((c) => (
-                    <li key={c}>
-                      <Link href={`/store?category=${c.toLowerCase()}`} className="dropdown-item">
-                        {c}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              {session && (
-                <li className="nav-item">
-                  <Link href="/orders" className="nav-link">My Orders</Link>
-                </li>
-              )}
+          <div id="responsive-nav">
+            <ul className="main-nav nav navbar-nav">
+              <li><Link href="/">Home</Link></li>
+              <li><Link href="/store?sale=true">Hot Deals</Link></li>
+              <li><Link href="/store">Categories</Link></li>
+              <li><Link href="/store?category=laptops">Laptops</Link></li>
+              <li><Link href="/store?category=smartphones">Smartphones</Link></li>
+              <li><Link href="/store?category=cameras">Cameras</Link></li>
+              <li><Link href="/store?category=accessories">Accessories</Link></li>
+              {session && <li><Link href="/orders">My Orders</Link></li>}
               {(session?.user as { role?: string })?.role === "ADMIN" && (
-                <li className="nav-item">
-                  <Link href="/admin" className="nav-link" style={{ color: "#ffc107 !important" }}>
-                    Admin
-                  </Link>
-                </li>
+                <li><Link href="/admin">Admin Panel</Link></li>
               )}
             </ul>
           </div>
         </div>
       </nav>
-    </>
+      {/* /NAVIGATION */}
+    </header>
   );
 }
 
