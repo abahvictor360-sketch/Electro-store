@@ -5,14 +5,19 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 const mainNav = [
-  { href: "/admin",           label: "Dashboard",    icon: "fa-chart-pie" },
-  { href: "/admin/products",  label: "Products",     icon: "fa-box" },
-  { href: "/admin/orders",    label: "Orders",       icon: "fa-receipt" },
-  { href: "/admin/customers", label: "Customers",    icon: "fa-users" },
+  { href: "/admin",             label: "Dashboard",  icon: "fa-chart-pie" },
+  { href: "/admin/products",    label: "Products",   icon: "fa-box" },
+  { href: "/admin/inventory",   label: "Inventory",  icon: "fa-warehouse" },
+  { href: "/admin/orders",      label: "Orders",     icon: "fa-receipt" },
+  { href: "/admin/customers",   label: "Customers",  icon: "fa-users" },
+];
+
+const reportsNav = [
+  { href: "/admin/analytics",   label: "Analytics",  icon: "fa-chart-bar" },
 ];
 
 const settingsNav = [
-  { href: "/admin/content",   label: "Site Content", icon: "fa-pen-to-square" },
+  { href: "/admin/content",     label: "Site Content", icon: "fa-pen-to-square" },
 ];
 
 export default function AdminSidebar() {
@@ -39,6 +44,18 @@ export default function AdminSidebar() {
       <nav className="a-nav">
         <div className="a-nav-section">Main Menu</div>
         {mainNav.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`a-nav-link${isActive(l.href) ? " active" : ""}`}
+          >
+            <span className="a-nav-icon"><i className={`fas ${l.icon}`} /></span>
+            {l.label}
+          </Link>
+        ))}
+
+        <div className="a-nav-section" style={{ marginTop: 8 }}>Reports</div>
+        {reportsNav.map((l) => (
           <Link
             key={l.href}
             href={l.href}
