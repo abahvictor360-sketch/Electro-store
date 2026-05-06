@@ -46,10 +46,10 @@ export default async function AdminProductsPage({ searchParams }: Props) {
                 style={{ paddingLeft: 36 }}
               />
             </div>
-            <select name="category" className="admin-input" style={{ width: 160 }}>
+            <select name="category" className="admin-input" style={{ width: 160 }} defaultValue={category ?? ""}>
               <option value="">All Categories</option>
               {allCategories.map((c) => (
-                <option key={c.category} value={c.category} selected={category === c.category}>
+                <option key={c.category} value={c.category}>
                   {c.category}
                 </option>
               ))}
