@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { SiteConfigData, HeroSlide, ShopBanner } from "@/lib/siteConfig";
+import type { SiteConfigData, HeroSlide, ShopBanner, CustomSection, CustomSectionType } from "@/lib/siteConfig";
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
@@ -23,12 +23,166 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
+/* ── Product Picker ──────────────────────────────────────── */
+interface PickerProduct {
+  id: string;
+  name: string;
+  category: string;
+  images: string[];
+  price: number;
+}
+
+function ProductPicker({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PickerProduct[]>([]);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/products?q=${encodeURIComponent(query)}`);
+        if (res.ok) setResults(await res.json());
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+  }, [query]);
+
+  function toggle(id: string) {
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  }
+
+  return (
+    <div style={{ border: "1px solid #e0e0e0", borderRadius: 8, overflow: "hidden" }}>
+      {/* Search input */}
+      <div style={{ position: "relative", borderBottom: "1px solid #e0e0e0" }}>
+        <i className="fas fa-search" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#aaa", fontSize: 13 }} />
+        <input
+          style={{ ...INPUT, border: "none", borderRadius: 0, paddingLeft: 34, outline: "none" }}
+          placeholder="Search products by name, category, brand…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Results */}
+      <div style={{ maxHeight: 260, overflowY: "auto", background: "#fafafa" }}>
+        {loading && (
+          <div style={{ padding: "16px", textAlign: "center", color: "#aaa", fontSize: "0.82rem" }}>
+            <i className="fas fa-spinner fa-spin" style={{ marginRight: 6 }} />Loading…
+          </div>
+        )}
+        {!loading && results.length === 0 && (
+          <div style={{ padding: "16px", textAlign: "center", color: "#bbb", fontSize: "0.82rem" }}>
+            {query ? "No products found." : "Start typing to search…"}
+          </div>
+        )}
+        {!loading && results.map((p) => {
+          const checked = selected.includes(p.id);
+          return (
+            <label
+              key={p.id}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", cursor: "pointer",
+                background: checked ? "rgba(209,0,36,0.05)" : "transparent",
+                borderBottom: "1px solid #f0f2f7",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggle(p.id)}
+                style={{ width: 15, height: 15, flexShrink: 0 }}
+              />
+              <div style={{ width: 34, height: 34, borderRadius: 6, overflow: "hidden", background: "#f0f2f7", flexShrink: 0 }}>
+                <img
+                  src={p.images?.[0] || "/img/product01.png"}
+                  alt={p.name}
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: "0.83rem", color: "#1e2030", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                <div style={{ fontSize: "0.72rem", color: "#888" }}>{p.category} · ${p.price.toFixed(2)}</div>
+              </div>
+              {checked && <i className="fas fa-check-circle" style={{ color: "#d10024", fontSize: 14, flexShrink: 0 }} />}
+            </label>
+          );
+        })}
+      </div>
+
+      {/* Selected count */}
+      {selected.length > 0 && (
+        <div style={{ padding: "8px 14px", background: "#fff", borderTop: "1px solid #e0e0e0", fontSize: "0.78rem", color: "#555", display: "flex", justifyContent: "space-between" }}>
+          <span><strong style={{ color: "#d10024" }}>{selected.length}</strong> product{selected.length !== 1 ? "s" : ""} selected</span>
+          <button onClick={() => onChange([])} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.75rem", padding: 0 }}>Clear all</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Selected Product Chips ──────────────────────────────── */
+function SelectedChips({ ids, onRemove }: { ids: string[]; onRemove: (id: string) => void }) {
+  const [products, setProducts] = useState<PickerProduct[]>([]);
+
+  useEffect(() => {
+    if (ids.length === 0) { setProducts([]); return; }
+    fetch(`/api/products?ids=${ids.join(",")}`)
+      .then((r) => r.json())
+      .then(setProducts)
+      .catch(() => {});
+  }, [ids.join(",")]);
+
+  if (ids.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+      {ids.map((id) => {
+        const p = products.find((x) => x.id === id);
+        return (
+          <span
+            key={id}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              background: "#f0f2f7", borderRadius: 20, padding: "4px 10px",
+              fontSize: "0.75rem", color: "#555",
+            }}
+          >
+            {p ? p.name : id.slice(-6)}
+            <button
+              onClick={() => onRemove(id)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#999", padding: 0, lineHeight: 1, fontSize: 12 }}
+            >
+              ×
+            </button>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Main Editor ─────────────────────────────────────────── */
 export default function ContentEditor({ initialConfig }: { initialConfig: SiteConfigData }) {
   const router = useRouter();
-  const [cfg, setCfg] = useState<SiteConfigData>(initialConfig);
+  const [cfg, setCfg] = useState<SiteConfigData>({
+    ...initialConfig,
+    customSections: initialConfig.customSections ?? [],
+  });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [tab, setTab] = useState("identity");
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   function set<K extends keyof SiteConfigData>(section: K, key: keyof SiteConfigData[K], val: unknown) {
     setCfg((p) => ({ ...p, [section]: { ...(p[section] as object), [key]: val } }));
@@ -48,14 +202,38 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
     if (res.ok) { setSaved(true); router.refresh(); }
   }
 
+  /* Custom sections helpers */
+  function addSection() {
+    const s: CustomSection = { id: uid(), title: "New Section", type: "custom", enabled: true, productIds: [] };
+    setTop("customSections", [...cfg.customSections, s]);
+    setExpandedSection(s.id);
+    setSaved(false);
+  }
+  function updateSection(id: string, patch: Partial<CustomSection>) {
+    setTop("customSections", cfg.customSections.map((s) => s.id === id ? { ...s, ...patch } : s));
+    setSaved(false);
+  }
+  function removeSection(id: string) {
+    setTop("customSections", cfg.customSections.filter((s) => s.id !== id));
+    if (expandedSection === id) setExpandedSection(null);
+    setSaved(false);
+  }
+
+  const SECTION_TYPE_LABELS: Record<CustomSectionType, string> = {
+    "flash-sale": "⚡ Flash Sale",
+    "featured":   "⭐ Featured Products",
+    "custom":     "🗂 Custom",
+  };
+
   const tabs = [
-    { id: "identity", label: "Site Identity",       icon: "fa-id-card" },
-    { id: "banner",   label: "Announcement Banner", icon: "fa-bullhorn" },
-    { id: "hero",     label: "Hero Slider",         icon: "fa-images" },
-    { id: "shop",     label: "Category Banners",    icon: "fa-th-large" },
-    { id: "homepage", label: "Homepage Sections",   icon: "fa-home" },
-    { id: "header",   label: "Header",              icon: "fa-heading" },
-    { id: "footer",   label: "Footer",              icon: "fa-copyright" },
+    { id: "identity",  label: "Site Identity",       icon: "fa-id-card" },
+    { id: "banner",    label: "Announcement Banner",  icon: "fa-bullhorn" },
+    { id: "hero",      label: "Hero Slider",          icon: "fa-images" },
+    { id: "shop",      label: "Category Banners",     icon: "fa-th-large" },
+    { id: "homepage",  label: "Homepage Sections",    icon: "fa-home" },
+    { id: "sections",  label: "Custom Sections",      icon: "fa-layer-group" },
+    { id: "header",    label: "Header",               icon: "fa-heading" },
+    { id: "footer",    label: "Footer",               icon: "fa-copyright" },
   ];
 
   return (
@@ -286,6 +464,132 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
                 </label>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── CUSTOM SECTIONS ── */}
+        {tab === "sections" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "#1e2030" }}>Custom Homepage Sections</h3>
+                <p style={{ margin: "3px 0 0", fontSize: "0.78rem", color: "#888" }}>
+                  Create sections like &ldquo;Flash Sale&rdquo; or &ldquo;Featured Products&rdquo; and hand-pick which products appear there.
+                </p>
+              </div>
+              <button onClick={addSection} className="btn-ap" style={{ padding: "8px 14px", fontSize: "0.8rem" }}>
+                <i className="fas fa-plus" /> Add Section
+              </button>
+            </div>
+
+            {cfg.customSections.length === 0 && (
+              <div className="data-card">
+                <div style={{ padding: "50px", textAlign: "center", color: "#bbb" }}>
+                  <i className="fas fa-layer-group" style={{ fontSize: "2.5rem", display: "block", marginBottom: 12 }} />
+                  <p style={{ margin: "0 0 14px" }}>No custom sections yet.</p>
+                  <button onClick={addSection} className="btn-ap" style={{ padding: "9px 18px", fontSize: "0.82rem" }}>
+                    <i className="fas fa-plus" style={{ marginRight: 6 }} /> Create your first section
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {cfg.customSections.map((section, i) => {
+              const isOpen = expandedSection === section.id;
+              return (
+                <div key={section.id} className="data-card" style={{ marginBottom: 14 }}>
+                  {/* Section header (always visible) */}
+                  <div
+                    className="data-card-header"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setExpandedSection(isOpen ? null : section.id)}
+                  >
+                    <h2 className="data-card-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: "50%", background: section.enabled ? "#d10024" : "#ccc", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {i + 1}
+                      </span>
+                      <span style={{ flex: 1 }}>{section.title || "Untitled Section"}</span>
+                      <span style={{ fontSize: "0.72rem", background: "#f0f2f7", color: "#888", padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>
+                        {SECTION_TYPE_LABELS[section.type]}
+                      </span>
+                      <span style={{ fontSize: "0.72rem", background: section.enabled ? "#d1fae5" : "#fee2e2", color: section.enabled ? "#065f46" : "#991b1b", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>
+                        {section.enabled ? "Visible" : "Hidden"}
+                      </span>
+                      <span style={{ fontSize: "0.75rem", color: "#aaa", marginLeft: 4 }}>
+                        {section.productIds.length} product{section.productIds.length !== 1 ? "s" : ""}
+                      </span>
+                    </h2>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeSection(section.id); }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, padding: "4px 8px" }}
+                      >
+                        <i className="fas fa-trash" />
+                      </button>
+                      <i className={`fas fa-chevron-${isOpen ? "up" : "down"}`} style={{ color: "#aaa", fontSize: 12, alignSelf: "center" }} />
+                    </div>
+                  </div>
+
+                  {/* Expanded editor */}
+                  {isOpen && (
+                    <div style={{ padding: "20px 24px", borderTop: "1px solid #f0f2f7" }}>
+                      <div className="row g-3" style={{ marginBottom: 16 }}>
+                        <div className="col-md-5">
+                          <Field label="Section Title">
+                            <input
+                              style={INPUT}
+                              value={section.title}
+                              onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                              placeholder="e.g. Flash Sale, Featured Products…"
+                            />
+                          </Field>
+                        </div>
+                        <div className="col-md-4">
+                          <Field label="Section Type">
+                            <select
+                              style={{ ...INPUT }}
+                              value={section.type}
+                              onChange={(e) => updateSection(section.id, { type: e.target.value as CustomSectionType })}
+                            >
+                              <option value="flash-sale">⚡ Flash Sale</option>
+                              <option value="featured">⭐ Featured Products</option>
+                              <option value="custom">🗂 Custom</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className="col-md-3">
+                          <Field label="Visibility">
+                            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 6 }}>
+                              <input
+                                type="checkbox"
+                                checked={section.enabled}
+                                onChange={(e) => updateSection(section.id, { enabled: e.target.checked })}
+                                style={{ width: 16, height: 16 }}
+                              />
+                              <span style={{ fontSize: "0.875rem" }}>Visible on homepage</span>
+                            </label>
+                          </Field>
+                        </div>
+                      </div>
+
+                      <Field
+                        label={`Products in this section (${section.productIds.length} selected)`}
+                        hint="Search and select products to show in this section. They will appear in a slider on the homepage."
+                      >
+                        <ProductPicker
+                          selected={section.productIds}
+                          onChange={(ids) => updateSection(section.id, { productIds: ids })}
+                        />
+                        <SelectedChips
+                          ids={section.productIds}
+                          onRemove={(id) => updateSection(section.id, { productIds: section.productIds.filter((x) => x !== id) })}
+                        />
+                      </Field>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

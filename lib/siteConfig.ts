@@ -23,6 +23,16 @@ export interface AnnouncementBanner {
   link: string;
 }
 
+export type CustomSectionType = "flash-sale" | "featured" | "custom";
+
+export interface CustomSection {
+  id: string;
+  title: string;
+  type: CustomSectionType;
+  enabled: boolean;
+  productIds: string[];
+}
+
 export interface SiteConfigData {
   // ── Site identity ───────────────────────────────
   siteTitle: string;
@@ -56,6 +66,9 @@ export interface SiteConfigData {
     hotDealsSubtitle: string;
     showNewsletter: boolean;
   };
+
+  // ── Custom homepage sections ────────────────────
+  customSections: CustomSection[];
 
   // ── Footer ──────────────────────────────────────
   footer: {
@@ -114,6 +127,8 @@ export const defaultConfig: SiteConfigData = {
     hotDealsSubtitle: "New Collection Up to 50% OFF",
     showNewsletter: true,
   },
+
+  customSections: [],
 
   footer: {
     about: "Your one-stop shop for the latest electronics — laptops, smartphones, cameras and accessories.",

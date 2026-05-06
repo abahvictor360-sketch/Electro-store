@@ -15,16 +15,34 @@ export default async function HomePage() {
   let newProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
   let topProducts: Awaited<ReturnType<typeof prisma.product.findMany>> = [];
   let categories: string[] = [];
+  // Custom sections: map of sectionId -> products
+  let customSectionProducts: Record<string, Awaited<ReturnType<typeof prisma.product.findMany>>> = {};
 
   try {
-    const [np, tp, cats] = await Promise.all([
+    const allCustomIds = (config.customSections ?? [])
+      .filter((s) => s.enabled && s.productIds.length > 0)
+      .flatMap((s) => s.productIds);
+    const uniqueIds = Array.from(new Set(allCustomIds));
+
+    const [np, tp, cats, customProds] = await Promise.all([
       prisma.product.findMany({ take: 8, orderBy: { createdAt: "desc" } }),
       prisma.product.findMany({ take: 8, orderBy: { price: "desc" } }),
       prisma.product.groupBy({ by: ["category"] }),
+      uniqueIds.length > 0
+        ? prisma.product.findMany({ where: { id: { in: uniqueIds } } })
+        : Promise.resolve([]),
     ]);
     newProducts = np;
     topProducts = tp;
     categories = cats.map((c) => c.category);
+
+    // Build per-section product list (preserving order from productIds array)
+    for (const section of config.customSections ?? []) {
+      if (!section.enabled || section.productIds.length === 0) continue;
+      customSectionProducts[section.id] = section.productIds
+        .map((id) => customProds.find((p) => p.id === id))
+        .filter(Boolean) as typeof customProds;
+    }
   } catch {
     // DB unavailable at build time
   }
@@ -126,6 +144,25 @@ export default async function HomePage() {
           </div>
         </div>
       )}
+
+      {/* CUSTOM SECTIONS */}
+      {(config.customSections ?? [])
+        .filter((s) => s.enabled && (customSectionProducts[s.id]?.length ?? 0) > 0)
+        .map((section) => (
+          <div key={section.id} className="section">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-12">
+                  <HomeTabs
+                    products={customSectionProducts[section.id]}
+                    title={section.title}
+                    categories={categories}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
 
       {/* NEWSLETTER */}
       {homepage.showNewsletter && (
