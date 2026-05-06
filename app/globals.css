@@ -386,16 +386,20 @@ select.admin-input { appearance: none; background-image: url("data:image/svg+xml
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
-/* Equal-height cards inside CSS grids */
+/* Products in CSS grid — natural height, no forced flex.
+   The .add-to-cart is position:absolute so flex/height:100% breaks it. */
 .products-grid .product,
 .products-grid-3 .product {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  position: relative; /* already set by style.css, but be explicit */
 }
-.products-grid .product .product-body,
-.products-grid-3 .product .product-body {
-  flex: 1;
+
+/* Allow the add-to-cart hover-slide animation to extend 60px below the
+   grid container without being clipped (mirrors Slick's padding trick) */
+.products-grid,
+.products-grid-3 {
+  overflow: visible;
+  padding-bottom: 60px;
+  margin-bottom: -60px;
 }
 /* Responsive */
 @media (max-width: 991px) {

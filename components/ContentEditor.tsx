@@ -23,6 +23,102 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
+/* ── Image Field: URL input + device upload ──────────────── */
+function ImageField({
+  label,
+  hint,
+  value,
+  preview,
+  previewHeight = 110,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  preview?: boolean;
+  previewHeight?: number;
+  onChange: (url: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadErr("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      onChange(data.url);
+    } catch (err: unknown) {
+      setUploadErr(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <Field label={label} hint={hint}>
+      {/* Preview */}
+      {preview && value && (
+        <div style={{ marginBottom: 10, borderRadius: 8, overflow: "hidden", background: "#f0f2f7", height: previewHeight }}>
+          <img src={value} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </div>
+      )}
+
+      {/* URL input row */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          style={{ ...INPUT, flex: 1 }}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Paste a URL  or  upload from device →"
+        />
+        {/* Hidden file input */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleFile}
+        />
+        {/* Upload button */}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{
+            flexShrink: 0, height: 38, padding: "0 14px",
+            border: "1px solid #d10024", borderRadius: 8,
+            background: uploading ? "#f0f2f7" : "#fff",
+            color: "#d10024", fontWeight: 600, fontSize: "0.8rem",
+            cursor: uploading ? "default" : "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+            transition: "background 0.15s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {uploading
+            ? <><i className="fas fa-spinner fa-spin" /> Uploading…</>
+            : <><i className="fas fa-upload" /> Upload</>}
+        </button>
+      </div>
+
+      {uploadErr && (
+        <span style={{ fontSize: "0.72rem", color: "#ef4444", marginTop: 4, display: "block" }}>
+          ⚠ {uploadErr}
+        </span>
+      )}
+    </Field>
+  );
+}
+
 /* ── Product Picker ──────────────────────────────────────── */
 interface PickerProduct {
   id: string;
@@ -290,9 +386,12 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
                   <Field label="Logo Text" hint="Displayed in the header if no logo image is set.">
                     <input style={INPUT} value={cfg.logoText} onChange={(e) => setTop("logoText", e.target.value)} placeholder="Electro" />
                   </Field>
-                  <Field label="Logo Image URL" hint="Overrides text logo. Leave blank to use text. Recommended: 180×40px.">
-                    <input style={INPUT} value={cfg.logoImageUrl} onChange={(e) => setTop("logoImageUrl", e.target.value)} placeholder="https://... or /img/logo.png" />
-                  </Field>
+                  <ImageField
+                    label="Logo Image"
+                    hint="Overrides text logo. Leave blank to use text. Recommended: 180×40px."
+                    value={cfg.logoImageUrl}
+                    onChange={(url) => setTop("logoImageUrl", url)}
+                  />
                 </div>
               </div>
               <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, background: "#1a1b2e", padding: "12px 20px", borderRadius: 8 }}>
@@ -378,10 +477,14 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
                   </button>
                 </div>
                 <div style={{ padding: "20px 24px" }}>
-                  {slide.image && <div style={{ marginBottom: 14, borderRadius: 8, overflow: "hidden", maxHeight: 130, background: "#f0f2f7" }}><img src={slide.image} alt="" style={{ width: "100%", height: 130, objectFit: "cover" }} /></div>}
-                  <Field label="Slide Image URL" hint="Recommended: 1920×600px. Use /img/... for local images.">
-                    <input style={INPUT} value={slide.image} onChange={(e) => setTop("heroSlides", cfg.heroSlides.map((s, i) => i === idx ? { ...s, image: e.target.value } : s))} placeholder="https://... or /img/hero.jpg" />
-                  </Field>
+                  <ImageField
+                    label="Slide Image"
+                    hint="Recommended: 1920×600px. Upload from device or paste a URL."
+                    value={slide.image}
+                    preview
+                    previewHeight={130}
+                    onChange={(url) => setTop("heroSlides", cfg.heroSlides.map((s, i) => i === idx ? { ...s, image: url } : s))}
+                  />
                   <div className="row g-3">
                     <div className="col-md-4"><Field label="Badge Text"><input style={INPUT} value={slide.badgeText} onChange={(e) => setTop("heroSlides", cfg.heroSlides.map((s, i) => i === idx ? { ...s, badgeText: e.target.value } : s))} placeholder="New Arrivals" /></Field></div>
                     <div className="col-md-8"><Field label="Title" hint="Use \n for a line break."><input style={INPUT} value={slide.title} onChange={(e) => setTop("heroSlides", cfg.heroSlides.map((s, i) => i === idx ? { ...s, title: e.target.value } : s))} placeholder="Latest Electronics\nat Best Prices" /></Field></div>
@@ -414,14 +517,26 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
                   <button onClick={() => setTop("shopBanners", cfg.shopBanners.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13 }}><i className="fas fa-trash" /> Remove</button>
                 </div>
                 <div style={{ padding: "18px 22px" }}>
-                  <div className="row g-3" style={{ alignItems: "center" }}>
-                    {b.image && <div className="col-md-2"><div style={{ height: 80, borderRadius: 8, overflow: "hidden", background: "#f0f2f7" }}><img src={b.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div></div>}
-                    <div className={b.image ? "col-md-10" : "col-md-12"}>
-                      <div className="row g-2">
-                        <div className="col-md-5"><Field label="Image URL"><input style={INPUT} value={b.image} onChange={(e) => setTop("shopBanners", cfg.shopBanners.map((x, i) => i === idx ? { ...x, image: e.target.value } : x))} placeholder="/img/shop01.png" /></Field></div>
-                        <div className="col-md-3"><Field label="Title" hint="Use \n for line break"><input style={INPUT} value={b.title} onChange={(e) => setTop("shopBanners", cfg.shopBanners.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} placeholder="Laptop\nCollection" /></Field></div>
-                        <div className="col-md-4"><Field label="Link"><input style={INPUT} value={b.link} onChange={(e) => setTop("shopBanners", cfg.shopBanners.map((x, i) => i === idx ? { ...x, link: e.target.value } : x))} placeholder="/store?category=Laptops" /></Field></div>
-                      </div>
+                  <div className="row g-2">
+                    <div className="col-md-12">
+                      <ImageField
+                        label="Banner Image"
+                        hint="Upload from device or paste a URL. Recommended: 400×300px."
+                        value={b.image}
+                        preview
+                        previewHeight={80}
+                        onChange={(url) => setTop("shopBanners", cfg.shopBanners.map((x, i) => i === idx ? { ...x, image: url } : x))}
+                      />
+                    </div>
+                    <div className="col-md-4">
+                      <Field label="Title" hint="Use \n for line break">
+                        <input style={INPUT} value={b.title} onChange={(e) => setTop("shopBanners", cfg.shopBanners.map((x, i) => i === idx ? { ...x, title: e.target.value } : x))} placeholder="Laptop\nCollection" />
+                      </Field>
+                    </div>
+                    <div className="col-md-8">
+                      <Field label="Link">
+                        <input style={INPUT} value={b.link} onChange={(e) => setTop("shopBanners", cfg.shopBanners.map((x, i) => i === idx ? { ...x, link: e.target.value } : x))} placeholder="/store?category=Laptops" />
+                      </Field>
                     </div>
                   </div>
                 </div>
