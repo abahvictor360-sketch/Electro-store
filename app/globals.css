@@ -420,3 +420,85 @@ select.admin-input { appearance: none; background-image: url("data:image/svg+xml
 .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
 .empty-state i { font-size: 3rem; margin-bottom: 16px; display: block; }
 .empty-state p { font-size: 0.95rem; margin-bottom: 20px; }
+
+/* ══════════════════════════════════════════════════
+   STOREFRONT RESPONSIVE — fills gaps in style.css
+   ══════════════════════════════════════════════════ */
+
+/* ── Store grid: 3→2→1 columns ─────────────────── */
+@media (max-width: 767px) {
+  .products-grid-3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+@media (max-width: 400px) {
+  .products-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Product card in slider: always full-height ── */
+.product {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.product .product-body { flex: 1; }
+
+/* ── Hero section mobile ────────────────────────── */
+@media (max-width: 575px) {
+  /* Make hero shorter and center-text on xs */
+  #hero-section { min-height: 280px !important; padding: 20px 0; }
+  #hero-section h1 { font-size: 1.5rem !important; }
+}
+
+/* ── Shop banners: consistent height ───────────── */
+.shop { overflow: hidden; }
+.shop .shop-img img { width: 100%; height: auto; display: block; }
+
+/* ── Hot deal section: stack on mobile ──────────── */
+@media (max-width: 575px) {
+  #hot-deal .hot-deal { padding: 30px 16px; }
+  #hot-deal .hot-deal-countdown { gap: 8px; }
+  #hot-deal .hot-deal-countdown li div h3 { font-size: 1.4rem; }
+}
+
+/* ── Header: fix search bar stacking ───────────── */
+@media (max-width: 767px) {
+  #header .header-search form { flex-wrap: wrap; }
+  #header .header-search .input-select { width: 100%; border-right: none; border-bottom: 1px solid #e4e7ed; }
+  #header .header-search .input { flex: 1 1 auto; }
+}
+
+/* ── Breadcrumb: shrink on mobile ───────────────── */
+@media (max-width: 575px) {
+  #breadcrumb .breadcrumb-tree { font-size: 0.78rem; flex-wrap: wrap; }
+}
+
+/* ── Section padding: tighten on mobile ─────────── */
+@media (max-width: 575px) {
+  .section { padding: 20px 0 !important; }
+  .section-title h3.title { font-size: 1.1rem; }
+}
+
+/* ── Cart table: horizontal scroll on mobile ────── */
+@media (max-width: 640px) {
+  .cart-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cart-table-wrapper table { min-width: 540px; }
+}
+
+/* ── User dashboard sidebar: hide on mobile ─────── */
+@media (max-width: 767px) {
+  .col-md-3.hidden-sm.hidden-xs { display: none !important; }
+  /* User pages go full-width on mobile */
+  .col-md-9 { width: 100% !important; }
+}
+
+/* ── Wishlist grid: 2-col on mobile ─────────────── */
+@media (max-width: 575px) {
+  .col-md-4.col-sm-6 { width: 50% !important; }
+}
+@media (max-width: 380px) {
+  .col-md-4.col-sm-6 { width: 100% !important; }
+}
+
+/* ── Footer: stack on mobile ────────────────────── */
+@media (max-width: 767px) {
+  #footer .footer-widget { margin-bottom: 24px; }
+}
