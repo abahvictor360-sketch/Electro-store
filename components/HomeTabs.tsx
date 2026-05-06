@@ -190,6 +190,7 @@ export default function HomeTabs({ products, title, categories }: Props) {
               return (
                 <div
                   key={p.id}
+                  className="hometabs-slide"
                   style={{
                     flexShrink: 0,
                     width: slideWidth > 0 ? `${slideWidth}px` : `${100 / perPage}%`,

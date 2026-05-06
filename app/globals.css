@@ -386,15 +386,33 @@ select.admin-input { appearance: none; background-image: url("data:image/svg+xml
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
-/* Products in CSS grid — natural height, no forced flex.
-   The .add-to-cart is position:absolute so flex/height:100% breaks it. */
-.products-grid .product,
-.products-grid-3 .product {
-  position: relative; /* already set by style.css, but be explicit */
+/* ── Product card image: fixed height, contained, never overflows ── */
+
+/* Clip only the image area, NOT the whole card (add-to-cart slides below) */
+.product .product-img {
+  height: 220px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product .product-img > img,
+.product .product-img a > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Slider cards: slightly shorter image */
+.hometabs-slide .product .product-img {
+  height: 200px;
 }
 
 /* Allow the add-to-cart hover-slide animation to extend 60px below the
-   grid container without being clipped (mirrors Slick's padding trick) */
+   grid / slider container without being clipped */
 .products-grid,
 .products-grid-3 {
   overflow: visible;
