@@ -433,13 +433,6 @@ select.admin-input { appearance: none; background-image: url("data:image/svg+xml
   .products-grid-3 { grid-template-columns: 1fr; }
 }
 
-/* ── Product card in slider: always full-height ── */
-.product {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.product .product-body { flex: 1; }
 
 /* ── Hero section mobile ────────────────────────── */
 @media (max-width: 575px) {

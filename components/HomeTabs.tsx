@@ -166,7 +166,8 @@ export default function HomeTabs({ products, title, categories }: Props) {
           </Link>
         </div>
       ) : (
-        <div ref={containerRef} style={{ overflow: "hidden" }}>
+        /* paddingBottom+marginBottom = Slick's 60px overflow zone so the add-to-cart hover animation isn't clipped */
+        <div ref={containerRef} style={{ overflow: "hidden", paddingBottom: 60, marginBottom: -60 }}>
           <div
             style={{
               display: "flex",
