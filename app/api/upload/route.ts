@@ -32,7 +32,11 @@ export async function POST(req: Request) {
   const filename = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   try {
+    // "private" is required for private Vercel Blob stores.
+    // The returned blob.url still contains a permanent embedded token
+    // so images remain publicly viewable on the storefront.
     const blob = await put(filename, file, {
+      access: "private",
       contentType: file.type,
     });
     return NextResponse.json({ url: blob.url });
