@@ -50,6 +50,125 @@ export default async function HomePage() {
 
   const { homepage } = config;
 
+  // Build ordered list of section IDs, ensuring custom sections not yet in
+  // sectionOrder are appended at the end
+  const DEFAULT_ORDER = ["new-products", "hot-deals", "top-selling", "top-selling-widgets", "newsletter"];
+  const savedOrder: string[] = config.sectionOrder ?? DEFAULT_ORDER;
+  const allCustomIds = (config.customSections ?? []).map((s) => s.id);
+  const sectionOrder = [
+    ...savedOrder,
+    ...allCustomIds.filter((id) => !savedOrder.includes(id)),
+  ];
+
+  function renderSection(sectionId: string) {
+    switch (sectionId) {
+      case "new-products":
+        if (!homepage.showNewProducts) return null;
+        return (
+          <div key="new-products" className="section">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-12">
+                  <HomeTabs products={newProducts} title={homepage.newProductsTitle} categories={categories} autoPlay />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "hot-deals":
+        if (!homepage.showHotDeals) return null;
+        return (
+          <div key="hot-deals" id="hot-deal" className="section">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-12">
+                  <div className="hot-deal">
+                    <ul className="hot-deal-countdown" id="countdown">
+                      <li><div><h3>02</h3><span>Days</span></div></li>
+                      <li><div><h3>10</h3><span>Hours</span></div></li>
+                      <li><div><h3>34</h3><span>Mins</span></div></li>
+                      <li><div><h3>60</h3><span>Secs</span></div></li>
+                    </ul>
+                    <h2 className="text-uppercase">{homepage.hotDealsTitle}</h2>
+                    <p>{homepage.hotDealsSubtitle}</p>
+                    <Link href="/store?sale=true" className="primary-btn cta-btn">Shop now</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "top-selling":
+        if (!homepage.showTopSelling) return null;
+        return (
+          <div key="top-selling" className="section">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-12">
+                  <HomeTabs products={topProducts} title={homepage.topSellingTitle} categories={categories} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "top-selling-widgets":
+        if (!homepage.showTopSelling || topProducts.length === 0) return null;
+        return (
+          <ProductWidgetSection
+            key="top-selling-widgets"
+            products={topProducts}
+            title={homepage.topSellingTitle}
+          />
+        );
+
+      case "newsletter":
+        if (!homepage.showNewsletter) return null;
+        return (
+          <div key="newsletter" id="newsletter" className="section">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-12">
+                  <div className="newsletter">
+                    <p>Sign Up for the <strong>NEWSLETTER</strong></p>
+                    <form>
+                      <input className="input" type="email" placeholder="Enter Your Email" />
+                      <button className="newsletter-btn"><i className="fa fa-envelope" /> Subscribe</button>
+                    </form>
+                    <ul className="newsletter-follow">
+                      <li><a href="#"><i className="fa fa-facebook" /></a></li>
+                      <li><a href="#"><i className="fa fa-twitter" /></a></li>
+                      <li><a href="#"><i className="fa fa-instagram" /></a></li>
+                      <li><a href="#"><i className="fa fa-pinterest" /></a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      default: {
+        // Custom section
+        const section = (config.customSections ?? []).find((s) => s.id === sectionId);
+        if (!section?.enabled || !customSectionProducts[sectionId]?.length) return null;
+        return (
+          <div key={sectionId} className="section">
+            <div className="container">
+              <div className="row">
+                <div className="col-md-12">
+                  <HomeTabs products={customSectionProducts[sectionId]} title={section.title} categories={categories} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+  }
+
   return (
     <SessionProvider>
       {/* Announcement Banner */}
@@ -89,117 +208,8 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* SECTION — New Products */}
-      {homepage.showNewProducts && (
-        <div className="section">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-12">
-                <HomeTabs
-                  products={newProducts}
-                  title={homepage.newProductsTitle}
-                  categories={categories}
-                  autoPlay
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* HOT DEAL SECTION */}
-      {homepage.showHotDeals && (
-        <div id="hot-deal" className="section">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-12">
-                <div className="hot-deal">
-                  <ul className="hot-deal-countdown" id="countdown">
-                    <li><div><h3>02</h3><span>Days</span></div></li>
-                    <li><div><h3>10</h3><span>Hours</span></div></li>
-                    <li><div><h3>34</h3><span>Mins</span></div></li>
-                    <li><div><h3>60</h3><span>Secs</span></div></li>
-                  </ul>
-                  <h2 className="text-uppercase">{homepage.hotDealsTitle}</h2>
-                  <p>{homepage.hotDealsSubtitle}</p>
-                  <Link href="/store?sale=true" className="primary-btn cta-btn">Shop now</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SECTION — Top Selling */}
-      {homepage.showTopSelling && (
-        <div className="section">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-12">
-                <HomeTabs
-                  products={topProducts}
-                  title={homepage.topSellingTitle}
-                  categories={categories}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SECTION — Top Selling Widget (3-column mini list) */}
-      {homepage.showTopSelling && topProducts.length > 0 && (
-        <ProductWidgetSection
-          products={topProducts}
-          title={homepage.topSellingTitle}
-        />
-      )}
-
-      {/* CUSTOM SECTIONS */}
-      {(config.customSections ?? [])
-        .filter((s) => s.enabled && (customSectionProducts[s.id]?.length ?? 0) > 0)
-        .map((section) => (
-          <div key={section.id} className="section">
-            <div className="container">
-              <div className="row">
-                <div className="col-md-12">
-                  <HomeTabs
-                    products={customSectionProducts[section.id]}
-                    title={section.title}
-                    categories={categories}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-      {/* NEWSLETTER */}
-      {homepage.showNewsletter && (
-        <div id="newsletter" className="section">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-12">
-                <div className="newsletter">
-                  <p>Sign Up for the <strong>NEWSLETTER</strong></p>
-                  <form>
-                    <input className="input" type="email" placeholder="Enter Your Email" />
-                    <button className="newsletter-btn">
-                      <i className="fa fa-envelope" /> Subscribe
-                    </button>
-                  </form>
-                  <ul className="newsletter-follow">
-                    <li><a href="#"><i className="fa fa-facebook" /></a></li>
-                    <li><a href="#"><i className="fa fa-twitter" /></a></li>
-                    <li><a href="#"><i className="fa fa-instagram" /></a></li>
-                    <li><a href="#"><i className="fa fa-pinterest" /></a></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SECTIONS — rendered in admin-configured order */}
+      {sectionOrder.map((id) => renderSection(id))}
 
       <Footer config={config} />
     </SessionProvider>

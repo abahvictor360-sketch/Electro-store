@@ -301,7 +301,13 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
   /* Custom sections helpers */
   function addSection() {
     const s: CustomSection = { id: uid(), title: "New Section", type: "custom", enabled: true, productIds: [] };
-    setTop("customSections", [...cfg.customSections, s]);
+    const currentOrder = cfg.sectionOrder ?? DEFAULT_SECTION_ORDER;
+    // Insert before newsletter if present, otherwise append
+    const newsletterIdx = currentOrder.indexOf("newsletter");
+    const newOrder = [...currentOrder];
+    if (newsletterIdx >= 0) newOrder.splice(newsletterIdx, 0, s.id);
+    else newOrder.push(s.id);
+    setCfg((p) => ({ ...p, customSections: [...p.customSections, s], sectionOrder: newOrder }));
     setExpandedSection(s.id);
     setSaved(false);
   }
@@ -310,7 +316,12 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
     setSaved(false);
   }
   function removeSection(id: string) {
-    setTop("customSections", cfg.customSections.filter((s) => s.id !== id));
+    const newOrder = (cfg.sectionOrder ?? DEFAULT_SECTION_ORDER).filter((sid) => sid !== id);
+    setCfg((p) => ({
+      ...p,
+      customSections: p.customSections.filter((s) => s.id !== id),
+      sectionOrder: newOrder,
+    }));
     if (expandedSection === id) setExpandedSection(null);
     setSaved(false);
   }
@@ -321,12 +332,59 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
     "custom":     "🗂 Custom",
   };
 
+  // ── Default section order (used when sectionOrder is missing in saved config)
+  const DEFAULT_SECTION_ORDER = [
+    "new-products", "hot-deals", "top-selling", "top-selling-widgets", "newsletter",
+  ];
+
+  // Metadata for built-in sections
+  const BUILT_IN_META: Record<string, { label: string; icon: string }> = {
+    "new-products":        { label: "New Products (Slider)",     icon: "fa-star" },
+    "hot-deals":           { label: "Hot Deal Banner",           icon: "fa-fire" },
+    "top-selling":         { label: "Top Selling (Slider)",      icon: "fa-chart-line" },
+    "top-selling-widgets": { label: "Top Selling (Widget List)", icon: "fa-th-list" },
+    "newsletter":          { label: "Newsletter Signup",         icon: "fa-envelope" },
+  };
+
+  // Compute the effective full order: saved order + any custom sections not yet in it
+  const savedOrder: string[] = cfg.sectionOrder ?? DEFAULT_SECTION_ORDER;
+  const allCustomIds = cfg.customSections.map((s) => s.id);
+  const fullOrder = [
+    ...savedOrder,
+    ...allCustomIds.filter((id) => !savedOrder.includes(id)),
+  ];
+
+  function moveSection(idx: number, dir: -1 | 1) {
+    const newOrder = [...fullOrder];
+    const target = idx + dir;
+    if (target < 0 || target >= newOrder.length) return;
+    [newOrder[idx], newOrder[target]] = [newOrder[target], newOrder[idx]];
+    setCfg((p) => ({ ...p, sectionOrder: newOrder }));
+    setSaved(false);
+  }
+
+  // Built-in section show/hide helpers
+  function builtInVisible(id: string): boolean {
+    if (id === "new-products")        return cfg.homepage.showNewProducts;
+    if (id === "hot-deals")           return cfg.homepage.showHotDeals;
+    if (id === "top-selling")         return cfg.homepage.showTopSelling;
+    if (id === "top-selling-widgets") return cfg.homepage.showTopSelling;
+    if (id === "newsletter")          return cfg.homepage.showNewsletter;
+    return false;
+  }
+  function toggleBuiltIn(id: string, visible: boolean) {
+    if (id === "new-products")        set("homepage", "showNewProducts",  visible);
+    if (id === "hot-deals")           set("homepage", "showHotDeals",     visible);
+    if (id === "top-selling" || id === "top-selling-widgets") set("homepage", "showTopSelling", visible);
+    if (id === "newsletter")          set("homepage", "showNewsletter",   visible);
+  }
+
   const tabs = [
     { id: "identity",  label: "Site Identity",       icon: "fa-id-card" },
     { id: "banner",    label: "Announcement Banner",  icon: "fa-bullhorn" },
     { id: "hero",      label: "Hero Slider",          icon: "fa-images" },
     { id: "shop",      label: "Category Banners",     icon: "fa-th-large" },
-    { id: "homepage",  label: "Homepage Sections",    icon: "fa-home" },
+    { id: "homepage",  label: "Homepage Layout",       icon: "fa-home" },
     { id: "sections",  label: "Custom Sections",      icon: "fa-layer-group" },
     { id: "header",    label: "Header",               icon: "fa-heading" },
     { id: "footer",    label: "Footer",               icon: "fa-copyright" },
@@ -545,40 +603,126 @@ export default function ContentEditor({ initialConfig }: { initialConfig: SiteCo
           </div>
         )}
 
-        {/* ── HOMEPAGE SECTIONS ── */}
+        {/* ── HOMEPAGE LAYOUT ── */}
         {tab === "homepage" && (
-          <div className="data-card">
-            <div className="data-card-header"><h2 className="data-card-title"><i className="fas fa-home" style={{ marginRight: 8, color: "#d10024" }} />Homepage Sections</h2></div>
-            <div style={{ padding: "24px" }}>
-              {([
-                { show: "showNewProducts", title: "newProductsTitle", label: "New Products", defaultTitle: "New Products" },
-                { show: "showTopSelling", title: "topSellingTitle", label: "Top Selling", defaultTitle: "Top Selling" },
-              ] as const).map((s) => (
-                <div key={s.show} style={{ padding: "14px", background: "#f8f9fc", borderRadius: 10, marginBottom: 12 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", marginBottom: 12 }}>
-                    <input type="checkbox" checked={cfg.homepage[s.show]} onChange={(e) => set("homepage", s.show, e.target.checked)} style={{ width: 16, height: 16 }} />
-                    Show {s.label} Section
-                  </label>
-                  <Field label="Section Title"><input style={INPUT} value={cfg.homepage[s.title]} onChange={(e) => set("homepage", s.title, e.target.value)} placeholder={s.defaultTitle} /></Field>
-                </div>
-              ))}
-              <div style={{ padding: "14px", background: "#f8f9fc", borderRadius: 10, marginBottom: 12 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem", marginBottom: 12 }}>
-                  <input type="checkbox" checked={cfg.homepage.showHotDeals} onChange={(e) => set("homepage", "showHotDeals", e.target.checked)} style={{ width: 16, height: 16 }} />
-                  Show Hot Deals Section
-                </label>
-                <div className="row g-2">
-                  <div className="col-md-6"><Field label="Title"><input style={INPUT} value={cfg.homepage.hotDealsTitle} onChange={(e) => set("homepage", "hotDealsTitle", e.target.value)} /></Field></div>
-                  <div className="col-md-6"><Field label="Subtitle"><input style={INPUT} value={cfg.homepage.hotDealsSubtitle} onChange={(e) => set("homepage", "hotDealsSubtitle", e.target.value)} /></Field></div>
-                </div>
-              </div>
-              <div style={{ padding: "14px", background: "#f8f9fc", borderRadius: 10 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
-                  <input type="checkbox" checked={cfg.homepage.showNewsletter} onChange={(e) => set("homepage", "showNewsletter", e.target.checked)} style={{ width: 16, height: 16 }} />
-                  Show Newsletter Section
-                </label>
-              </div>
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1rem", color: "#1e2030" }}>Homepage Layout</h3>
+              <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "#888" }}>
+                Drag sections up or down to reorder them. Toggle the eye to show/hide. Click a section to edit its title or settings.
+              </p>
             </div>
+
+            {fullOrder.map((sectionId, idx) => {
+              const isBuiltIn = sectionId in BUILT_IN_META;
+              const meta = BUILT_IN_META[sectionId];
+              const customSec = !isBuiltIn ? cfg.customSections.find((s) => s.id === sectionId) : null;
+              const visible = isBuiltIn ? builtInVisible(sectionId) : (customSec?.enabled ?? false);
+              const label = isBuiltIn ? meta.label : (customSec?.title || "Untitled Section");
+              const icon  = isBuiltIn ? meta.icon : "fa-layer-group";
+
+              return (
+                <div
+                  key={sectionId}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    background: visible ? "#fff" : "#fafafa",
+                    border: `1px solid ${visible ? "#e4e7ed" : "#f0f2f7"}`,
+                    borderRadius: 10, padding: "12px 16px", marginBottom: 8,
+                    opacity: visible ? 1 : 0.6,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {/* Order buttons */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+                    <button
+                      onClick={() => moveSection(idx, -1)}
+                      disabled={idx === 0}
+                      title="Move up"
+                      style={{ width: 24, height: 22, border: "1px solid #e0e0e0", borderRadius: 4, background: idx === 0 ? "#f9fafb" : "#fff", color: idx === 0 ? "#ddd" : "#555", cursor: idx === 0 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}
+                    >
+                      <i className="fas fa-chevron-up" />
+                    </button>
+                    <button
+                      onClick={() => moveSection(idx, 1)}
+                      disabled={idx === fullOrder.length - 1}
+                      title="Move down"
+                      style={{ width: 24, height: 22, border: "1px solid #e0e0e0", borderRadius: 4, background: idx === fullOrder.length - 1 ? "#f9fafb" : "#fff", color: idx === fullOrder.length - 1 ? "#ddd" : "#555", cursor: idx === fullOrder.length - 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}
+                    >
+                      <i className="fas fa-chevron-down" />
+                    </button>
+                  </div>
+
+                  {/* Position badge */}
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: visible ? "#d10024" : "#ccc", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {idx + 1}
+                  </span>
+
+                  {/* Icon + Label */}
+                  <i className={`fas ${icon}`} style={{ color: visible ? "#d10024" : "#bbb", fontSize: 14, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontWeight: 600, fontSize: "0.875rem", color: visible ? "#1e2030" : "#aaa" }}>
+                    {label}
+                    {!isBuiltIn && customSec && (
+                      <span style={{ marginLeft: 8, fontSize: "0.7rem", background: "#f0f2f7", color: "#888", padding: "1px 7px", borderRadius: 20, fontWeight: 600 }}>
+                        {SECTION_TYPE_LABELS[customSec.type]}
+                      </span>
+                    )}
+                  </span>
+
+                  {/* Title edit for built-in sections with titles */}
+                  {isBuiltIn && (sectionId === "new-products" || sectionId === "top-selling" || sectionId === "top-selling-widgets") && (
+                    <input
+                      style={{ ...INPUT, width: 200, fontSize: "0.8rem", padding: "6px 10px" }}
+                      value={
+                        sectionId === "new-products" ? cfg.homepage.newProductsTitle :
+                        cfg.homepage.topSellingTitle
+                      }
+                      onChange={(e) => set("homepage", sectionId === "new-products" ? "newProductsTitle" : "topSellingTitle", e.target.value)}
+                      placeholder="Section title…"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
+
+                  {/* Hot deals subtitle quick-edit */}
+                  {isBuiltIn && sectionId === "hot-deals" && (
+                    <input
+                      style={{ ...INPUT, width: 180, fontSize: "0.8rem", padding: "6px 10px" }}
+                      value={cfg.homepage.hotDealsTitle}
+                      onChange={(e) => set("homepage", "hotDealsTitle", e.target.value)}
+                      placeholder="Hot deals title…"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
+
+                  {/* Custom section: jump to edit */}
+                  {!isBuiltIn && customSec && (
+                    <button
+                      onClick={() => { setExpandedSection(sectionId); setTab("sections"); }}
+                      style={{ flexShrink: 0, height: 30, padding: "0 10px", border: "1px solid #e0e0e0", borderRadius: 6, background: "#fff", color: "#555", fontSize: "0.72rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <i className="fas fa-pen" /> Edit
+                    </button>
+                  )}
+
+                  {/* Visibility toggle */}
+                  <button
+                    onClick={() => {
+                      if (isBuiltIn) toggleBuiltIn(sectionId, !visible);
+                      else if (customSec) updateSection(sectionId, { enabled: !visible });
+                    }}
+                    title={visible ? "Hide section" : "Show section"}
+                    style={{ flexShrink: 0, width: 34, height: 34, border: "1px solid #e0e0e0", borderRadius: 8, background: visible ? "#fff" : "#f0f2f7", color: visible ? "#d10024" : "#bbb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}
+                  >
+                    <i className={`fas fa-eye${visible ? "" : "-slash"}`} />
+                  </button>
+                </div>
+              );
+            })}
+
+            <p style={{ marginTop: 14, fontSize: "0.72rem", color: "#aaa" }}>
+              <i className="fas fa-info-circle" style={{ marginRight: 4 }} />
+              Use the ↑↓ arrows to reorder. Changes apply after you click <strong>Save Changes</strong>. Add custom sections in the <button onClick={() => setTab("sections")} style={{ background: "none", border: "none", color: "#d10024", cursor: "pointer", fontWeight: 700, fontSize: "0.72rem", padding: 0 }}>Custom Sections</button> tab.
+            </p>
           </div>
         )}
 

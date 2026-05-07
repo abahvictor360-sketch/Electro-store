@@ -70,6 +70,12 @@ export interface SiteConfigData {
   // ── Custom homepage sections ────────────────────
   customSections: CustomSection[];
 
+  // ── Homepage section order ───────────────────────
+  // Array of section IDs in the order they should appear.
+  // Built-in IDs: "new-products" | "hot-deals" | "top-selling" | "top-selling-widgets" | "newsletter"
+  // Custom section IDs are appended here when created.
+  sectionOrder: string[];
+
   // ── Footer ──────────────────────────────────────
   footer: {
     about: string;
@@ -129,6 +135,14 @@ export const defaultConfig: SiteConfigData = {
   },
 
   customSections: [],
+
+  sectionOrder: [
+    "new-products",
+    "hot-deals",
+    "top-selling",
+    "top-selling-widgets",
+    "newsletter",
+  ],
 
   footer: {
     about: "Your one-stop shop for the latest electronics — laptops, smartphones, cameras and accessories.",
