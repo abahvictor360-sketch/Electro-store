@@ -31,10 +31,19 @@ export async function POST(req: Request) {
   const ext = file.name.split(".").pop() ?? "jpg";
   const filename = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const blob = await put(filename, file, {
-    access: "public",
-    contentType: file.type,
-  });
-
-  return NextResponse.json({ url: blob.url });
+  try {
+    const blob = await put(filename, file, {
+      access: "public",
+      contentType: file.type,
+    });
+    return NextResponse.json({ url: blob.url });
+  } catch (err: unknown) {
+    console.error("[upload] Vercel Blob error:", err);
+    const msg = err instanceof Error ? err.message : "Upload failed";
+    // Surface a helpful hint when the token is missing
+    const hint = msg.includes("token") || msg.includes("BLOB_READ_WRITE_TOKEN")
+      ? "BLOB_READ_WRITE_TOKEN is not configured. Add it in Vercel → Storage → Blob → your project → Settings."
+      : msg;
+    return NextResponse.json({ error: hint }, { status: 500 });
+  }
 }
