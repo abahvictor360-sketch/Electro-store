@@ -3,7 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Electro - HTML Ecommerce Template",
+  title: "Electro - Your Best Electronic Place",
   description: "Shop the latest electronics — laptops, smartphones, cameras and more.",
 };
 

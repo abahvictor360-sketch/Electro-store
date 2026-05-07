@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import SessionProvider from "@/components/SessionProvider";
 import HomeTabs from "@/components/HomeTabs";
 import HeroSection from "@/components/HeroSection";
+import ProductWidgetSection from "@/components/ProductWidgetSection";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,7 @@ export default async function HomePage() {
                   products={newProducts}
                   title={homepage.newProductsTitle}
                   categories={categories}
+                  autoPlay
                 />
               </div>
             </div>
@@ -143,6 +145,14 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* SECTION — Top Selling Widget (3-column mini list) */}
+      {homepage.showTopSelling && topProducts.length > 0 && (
+        <ProductWidgetSection
+          products={topProducts}
+          title={homepage.topSellingTitle}
+        />
       )}
 
       {/* CUSTOM SECTIONS */}

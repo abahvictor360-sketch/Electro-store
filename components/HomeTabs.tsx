@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
@@ -21,6 +21,8 @@ interface Props {
   products: Product[];
   title: string;
   categories: string[];
+  autoPlay?: boolean;
+  autoPlayInterval?: number; // ms, default 3500
 }
 
 function getPerPage(w: number) {
@@ -71,7 +73,7 @@ function ArrowBtn({
   );
 }
 
-export default function HomeTabs({ products, title, categories }: Props) {
+export default function HomeTabs({ products, title, categories, autoPlay = false, autoPlayInterval = 3500 }: Props) {
   const [active, setActive] = useState("All");
   const [idx, setIdx] = useState(0);
   const [perPage, setPerPage] = useState(4);
@@ -116,7 +118,16 @@ export default function HomeTabs({ products, title, categories }: Props) {
   const canNext = idx < maxIdx;
 
   const prev = () => setIdx((i) => Math.max(0, i - perPage));
-  const next = () => setIdx((i) => Math.min(maxIdx, i + perPage));
+  const next = useCallback(() => setIdx((i) => Math.min(maxIdx, i + perPage)), [maxIdx, perPage]);
+
+  // Auto-play: advance one slide at a time, wrap around
+  useEffect(() => {
+    if (!autoPlay || filtered.length <= perPage) return;
+    const timer = setInterval(() => {
+      setIdx((i) => (i >= maxIdx ? 0 : i + 1));
+    }, autoPlayInterval);
+    return () => clearInterval(timer);
+  }, [autoPlay, autoPlayInterval, filtered.length, perPage, maxIdx]);
 
   // Pixel-based offset (accurate after first paint)
   const slideWidth = containerW > 0 ? containerW / perPage : 0;
