@@ -33,13 +33,15 @@ export async function POST(req: Request) {
 
   try {
     // "private" is required for private Vercel Blob stores.
-    // The returned blob.url still contains a permanent embedded token
-    // so images remain publicly viewable on the storefront.
+    // We route the URL through /api/image so browsers can load the image
+    // without needing an Authorization header (the proxy adds it server-side).
     const blob = await put(filename, file, {
       access: "private",
       contentType: file.type,
     });
-    return NextResponse.json({ url: blob.url });
+    // Return a proxy URL so <img> tags can display private blobs in browsers.
+    const proxyUrl = `/api/image?url=${encodeURIComponent(blob.url)}`;
+    return NextResponse.json({ url: proxyUrl });
   } catch (err: unknown) {
     console.error("[upload] Vercel Blob error:", err);
     const msg = err instanceof Error ? err.message : "Upload failed";
