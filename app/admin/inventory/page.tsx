@@ -93,14 +93,14 @@ export default async function InventoryPage({ searchParams }: Props) {
 
         <form method="GET" action="/admin/inventory" style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
           {filter && <input type="hidden" name="filter" value={filter} />}
-          <div className="a-search" style={{ position: "relative" }}>
-            <i className="fas fa-search a-search-icon" />
+          <div className="admin-search" style={{ maxWidth: 240 }}>
+            <i className="fas fa-search search-icon" />
             <input
               name="q"
               defaultValue={q}
-              className="a-input"
+              className="admin-input"
               placeholder="Search products…"
-              style={{ paddingLeft: 34, width: 220 }}
+              style={{ paddingLeft: 36, width: 220 }}
             />
           </div>
         </form>

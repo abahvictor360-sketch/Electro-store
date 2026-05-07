@@ -14,6 +14,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const discount = product.salePrice
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)
     : 0;
+  const isNew = product.createdAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const inWishlist = has(product.id);
   const img = product.images?.[0] || "/img/product01.png";
 
@@ -23,10 +24,10 @@ export default function ProductCard({ product }: { product: Product }) {
         <Link href={`/product/${product.slug}`}>
           <img src={img} alt={product.name} />
         </Link>
-        {(discount > 0 || product.createdAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) && (
+        {(discount > 0 || isNew) && (
           <div className="product-label">
             {discount > 0 && <span className="sale">-{discount}%</span>}
-            <span className="new">NEW</span>
+            {isNew && <span className="new">NEW</span>}
           </div>
         )}
       </div>
